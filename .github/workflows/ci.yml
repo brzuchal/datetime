@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [ "[0-9]+.[0-9]+" ]
+    paths-ignore: [ "README.md", "CHANGELOG.md" ]
+  pull_request:
+    branches: [ "[0-9]+.[0-9]+" ]
+
+jobs:
+  analysis:
+    runs-on: ubuntu-latest
+
+    # If you want analysis to wait for tests to complete, add needs:
+    needs: build-test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+
+      - name: Install Composer dependencies
+        uses: php-actions/composer@v7
+        with:
+          command: install --no-interaction --prefer-dist
+
+      - name: Run phpstan
+        run: vendor/bin/phpstan analyse --level=max src tests --error-format=junit > phpstan-junit.xml
+
+      - name: Upload phpstan results
+        uses: actions/upload-artifact@v3
+        with:
+          name: phpstan-junit
+          path: phpstan-junit.xml
+
+      - name: Report phpstan results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: "PHPStan Analysis"
+          path: "phpstan-junit.xml"
+          reporter: "junit"
+          fail-on-error: false
+
+      - name: Run phpcs
+        run: vendor/bin/phpcs --standard=PSR12 --report=junit --report-file=phpcs-junit.xml src tests
+
+      - name: Upload phpcs results
+        uses: actions/upload-artifact@v3
+        with:
+          name: phpcs-junit
+          path: phpcs-junit.xml
+
+      - name: Report phpcs results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: "PHPCS Analysis"
+          path: "phpcs-junit.xml"
+          reporter: "junit"
+          fail-on-error: false
+
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: [ 8.2, 8.3, 8.4 ]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+
+      - name: Install Composer dependencies
+        uses: php-actions/composer@v7
+        with:
+          command: install --no-interaction --prefer-dist
+
+      - name: Generate tz data
+        run: make tz
+
+      - name: Run PHPUnit
+        uses: php-actions/phpunit@v2
+        with:
+          args: "--coverage-clover coverage.xml --log-junit junit.xml --coverage-text"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: coverage.xml
+
+      - name: Upload test results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: junit
+          path: junit.xml
+
+      - name: Report test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: 'PHPUnit Tests'
+          path: 'junit.xml'
+          reporter: 'junit'
+          fail-on-error: false

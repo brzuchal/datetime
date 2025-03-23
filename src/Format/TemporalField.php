@@ -1,0 +1,52 @@
+<?php declare(strict_types=1);
+
+namespace Brzuchal\DateTime\Format;
+
+enum TemporalField
+{
+    case Year;
+    case Month;
+    case Day;
+
+    case Hour;     // 24-hour
+    case Hour12;   // 12-hour
+    case Minute;
+    case Second;
+    case AmPm;
+
+    case DayOfWeek;
+    case DayOfYear;
+
+    case WeekOfMonth;
+    case WeekOfYear;
+
+    public function symbol(): string
+    {
+        return match ($this) {
+            self::Year    => 'Y',
+            self::Month   => 'm',
+            self::Day     => 'd',
+            self::Hour    => 'H',
+            self::Hour12  => 'h',
+            self::Minute  => 'i',
+            self::Second  => 's',
+            self::AmPm    => 'a',
+            default       => '',
+        };
+    }
+
+    public static function fromSymbol(string $symbol): self|null
+    {
+        return match ($symbol) {
+            'Y', 'y', 'u' => self::Year,
+            'm'           => self::Month,
+            'd'           => self::Day,
+            'H'           => self::Hour,
+            'h'           => self::Hour12,
+            'i'           => self::Minute,
+            's'           => self::Second,
+            'a'           => self::AmPm,
+            default       => null,
+        };
+    }
+}

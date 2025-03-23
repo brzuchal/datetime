@@ -1,0 +1,7 @@
+.github/ export-ignore
+tests/ export-ignore
+.editorconfig/ export-ignore
+Makefile export-ignore
+phpcs.xml.dist export-ignore
+phpstan.neaon.dist export-ignore
+phpunit.xml.dist export-ignore
