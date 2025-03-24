@@ -446,7 +446,7 @@ final class LocalDate implements TemporalAccessor
      */
     public function __unserialize(array $data): void
     {
-        [$year, $month, $day] = \sscanf($data['date'], '%d-%d-%d');
+        [$year, $month, $day] = \explode('-', $data['date'], 3);
         self::__construct(
             year: (int) $year,
             month: (int) $month,
