@@ -2,6 +2,6 @@
 
 namespace Brzuchal\DateTime\Format;
 
-final class ParseException extends \Exception
+final class InvalidInput extends \Exception
 {
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Brzuchal\DateTime\DayOfWeek;
-use Brzuchal\DateTime\Format\ParseException;
+use Brzuchal\DateTime\Format\InvalidInput;
 use Brzuchal\DateTime\Format\TemporalField;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
@@ -35,7 +35,7 @@ final class LocalDateTest extends TestCase
     public function testFromEpochDay(): void
     {
         // Epoch day: 0 corresponds roughly to 1970-01-01
-        $localDate = LocalDate::epoch(0);
+        $localDate = LocalDate::fromEpochDay(0);
 
         self::assertSame(1970, $localDate->year);
         self::assertSame(1, $localDate->month);
@@ -46,7 +46,7 @@ final class LocalDateTest extends TestCase
     {
         // 1970-01-01 is a Thursday (many consider DayOfWeek enumeration 0-based or 1-based).
         // Depending on the implemented rules, adjust the expected value.
-        $localDate = LocalDate::epoch(0);
+        $localDate = LocalDate::fromEpochDay(0);
 
         // Example check: If DayOfWeek::Thursday is numeric 3 or 4, adjust accordingly.
         self::assertSame(DayOfWeek::Thursday, $localDate->dayOfWeek);
@@ -90,6 +90,9 @@ final class LocalDateTest extends TestCase
         LocalDate::parse($date);
     }
 
+    /**
+     * @return iterable<non-empty-string,array{0:non-empty-string}>
+     */
     public static function dataInvalidDate(): iterable
     {
         yield '29 Feb in non-leap year' => ['2023-02-29'];
@@ -102,11 +105,14 @@ final class LocalDateTest extends TestCase
     #[DataProvider('dataParseException')]
     public function testParseException(string $date): void
     {
-        $this->expectException(ParseException::class);
+        $this->expectException(InvalidInput::class);
 
         LocalDate::parse($date);
     }
 
+    /**
+     * @return iterable<non-empty-string,array{0:non-empty-string}>
+     */
     public static function dataParseException(): iterable
     {
         yield 'missing day&month' => ['2023'];
@@ -141,7 +147,11 @@ final class LocalDateTest extends TestCase
     {
         $localDate = LocalDate::of(2023, 5, 10);
 
-        self::assertEquals($localDate, unserialize(serialize($localDate)));
+        $restoredLocalDate = unserialize(serialize($localDate));
+        self::assertInstanceOf(LocalDate::class, $restoredLocalDate);
+        self::assertEquals($localDate->year, $restoredLocalDate->year);
+        self::assertEquals($localDate->month, $restoredLocalDate->month);
+        self::assertEquals($localDate->day, $restoredLocalDate->day);
     }
 
     public function testGetTemporalField(): void

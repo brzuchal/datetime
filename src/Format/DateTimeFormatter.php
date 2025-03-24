@@ -7,7 +7,17 @@ final readonly class DateTimeFormatter
     private function __construct(private string $pattern)
     {}
 
-    /** @throws UnsupportedPatternSymbol */
+    /**
+     * Creates an instance based on the provided date-time format pattern.
+     *
+     * @param DateTimeFormat|string $pattern A date-time format instance or a format pattern string.
+     *                                        The pattern string must not be empty or contain unsupported symbols.
+     *
+     * @return self Returns a new instance with the provided pattern.
+     *
+     * @throws InvalidPattern If the provided pattern is empty or null.
+     * @throws UnsupportedPatternSymbol If the pattern contains unsupported symbols or invalid characters.
+     */
     public static function of(DateTimeFormat|string $pattern): self
     {
         if ($pattern instanceof DateTimeFormat) {
@@ -15,6 +25,10 @@ final readonly class DateTimeFormatter
         }
 
         $normalizedPattern = \preg_replace('/[\s\-,]/', '', $pattern);
+        if ($normalizedPattern === null || $normalizedPattern === '') {
+            throw new InvalidPattern('Pattern cannot be empty');
+        }
+
         if (! \preg_match('/^[yYumdHisah]+$/', $normalizedPattern)) {
             throw new UnsupportedPatternSymbol('Pattern contains unsupported symbols or invalid characters');
         }
@@ -22,12 +36,12 @@ final readonly class DateTimeFormatter
         return new self($pattern);
     }
 
-    /** @throws ParseException */
+    /** @throws InvalidInput */
     public function parse(string $input): TemporalFields
     {
         $regex = $this->patternToRegex($this->pattern);
         if (! \preg_match($regex, $input, $matches)) {
-            throw new ParseException("Unable to parse date/time from '{$input}'");
+            throw new InvalidInput('Unable to parse date/time from "' . $input . '"');
         }
 
         $hour = isset($matches['hour24']) ? (int) $matches['hour24'] : null;
@@ -99,6 +113,6 @@ final readonly class DateTimeFormatter
             'a' => '(?P<ampm>AM|PM|am|pm)',
         ]);
 
-        return "/^{$regex}$/";
+        return '/^' . $regex . '$/';
     }
 }
