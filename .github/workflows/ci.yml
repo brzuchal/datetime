@@ -48,13 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: [ "8.3", "8.4" ]
+        php: [ "8.4" ]
         dependency-versions: [ lowest, highest ]
-        include:
-          - php: "8.1"
-            dependency-versions: highest
-          - php: "8.2"
-            dependency-versions: highest
 
     steps:
       - name: Check out repository
