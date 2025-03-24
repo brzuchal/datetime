@@ -91,7 +91,7 @@ final class LocalDateTest extends TestCase
     }
 
     /**
-     * @return iterable<non-empty-string,array{0:non-empty-string}
+     * @return iterable<non-empty-string,array{0:non-empty-string}>
      */
     public static function dataInvalidDate(): iterable
     {
@@ -111,7 +111,7 @@ final class LocalDateTest extends TestCase
     }
 
     /**
-     * @return iterable<non-empty-string,array{0:non-empty-string}
+     * @return iterable<non-empty-string,array{0:non-empty-string}>
      */
     public static function dataParseException(): iterable
     {
