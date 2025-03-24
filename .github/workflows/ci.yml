@@ -68,7 +68,7 @@ jobs:
 
       - name: Run PHPUnit
         if: success() || failure()
-        run: composer exec -- phpunit --testsuite tests --colors=always --log-junit=phpunit-${{ matrix.php }}-${{ matrix.dependency-versions }}.xml
+        run: composer exec -- phpunit --colors=always --log-junit=phpunit-${{ matrix.php }}-${{ matrix.dependency-versions }}.xml
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
