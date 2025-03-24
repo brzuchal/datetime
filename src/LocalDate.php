@@ -448,10 +448,11 @@ final class LocalDate implements TemporalAccessor
     public function __unserialize(array $data): void
     {
         [$year, $month, $day] = \explode('-', $data['date'], 3);
-        /** @phpstan-ignore argument.type */
         self::__construct(
             year: (int) $year,
+            /** @phpstan-ignore argument.type */
             month: (int) $month,
+            /** @phpstan-ignore argument.type */
             day: (int) $day,
         );
     }
