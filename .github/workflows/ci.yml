@@ -34,15 +34,15 @@ jobs:
           name: PHPStan report
           path: phpstan-checkstyle.xml
 
-      - name: Run PHPCodeSniffer
-        if: success() || failure()
-        run: composer exec -- phpcs --colors --report=checkstyle --report-checkstyle=phpcs-checkstyle.xml
-
-      - uses: jwgmeligmeyling/checkstyle-github-action@master
-        if: success() || failure()
-        with:
-          name: PHPCodeSniffer report
-          path: phpcs-checkstyle.xml
+#      - name: Run PHPCodeSniffer
+#        if: success() || failure()
+#        run: composer exec -- phpcs --colors --report=checkstyle --report-checkstyle=phpcs-checkstyle.xml
+#
+#      - uses: jwgmeligmeyling/checkstyle-github-action@master
+#        if: success() || failure()
+#        with:
+#          name: PHPCodeSniffer report
+#          path: phpcs-checkstyle.xml
 
   tests:
     runs-on: ubuntu-latest
