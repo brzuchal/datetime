@@ -90,6 +90,9 @@ final class LocalDateTest extends TestCase
         LocalDate::parse($date);
     }
 
+    /**
+     * @return iterable<non-empty-string,array{0:non-empty-string}
+     */
     public static function dataInvalidDate(): iterable
     {
         yield '29 Feb in non-leap year' => ['2023-02-29'];
@@ -107,6 +110,9 @@ final class LocalDateTest extends TestCase
         LocalDate::parse($date);
     }
 
+    /**
+     * @return iterable<non-empty-string,array{0:non-empty-string}
+     */
     public static function dataParseException(): iterable
     {
         yield 'missing day&month' => ['2023'];
@@ -142,6 +148,7 @@ final class LocalDateTest extends TestCase
         $localDate = LocalDate::of(2023, 5, 10);
 
         $restoredLocalDate = unserialize(serialize($localDate));
+        self::assertInstanceOf(LocalDate::class, $restoredLocalDate);
         self::assertEquals($localDate->year, $restoredLocalDate->year);
         self::assertEquals($localDate->month, $restoredLocalDate->month);
         self::assertEquals($localDate->day, $restoredLocalDate->day);

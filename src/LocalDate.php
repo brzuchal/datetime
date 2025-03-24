@@ -427,6 +427,7 @@ final class LocalDate implements TemporalAccessor
         $marchDoy0 = (int) $doyEst;
         $marchMonth0 = \intdiv($marchDoy0 * 5 + 2, 153);
 
+        /** @phpstan-ignore return.type */
         return [
             $yearEst + $adjust + \intdiv($marchMonth0, 10),
             ($marchMonth0 + 2) % 12 + 1,
@@ -447,6 +448,9 @@ final class LocalDate implements TemporalAccessor
     public function __unserialize(array $data): void
     {
         [$year, $month, $day] = \explode('-', $data['date'], 3);
+        assert(is_numeric($year) && is_numeric($month) && is_numeric($day));
+        assert($month >= 1 && $month <= 12);
+        assert($day >= 1 && $day <= 31);
         self::__construct(
             year: (int) $year,
             month: (int) $month,
