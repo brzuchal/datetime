@@ -22,10 +22,7 @@ final readonly class TemporalFields implements TemporalAccessor
             TemporalField::Hour => $this->hour,
             TemporalField::Minute => $this->minute,
             TemporalField::Second => $this->second,
-            TemporalField::Hour12,
-            TemporalField::AmPm,
-            TemporalField::DayOfWeek,
-            TemporalField::DayOfYear => null,
+            default => null,
         };
     }
 

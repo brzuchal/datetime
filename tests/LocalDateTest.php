@@ -35,7 +35,7 @@ final class LocalDateTest extends TestCase
     public function testFromEpochDay(): void
     {
         // Epoch day: 0 corresponds roughly to 1970-01-01
-        $localDate = LocalDate::epoch(0);
+        $localDate = LocalDate::fromEpochDay(0);
 
         self::assertSame(1970, $localDate->year);
         self::assertSame(1, $localDate->month);
@@ -46,7 +46,7 @@ final class LocalDateTest extends TestCase
     {
         // 1970-01-01 is a Thursday (many consider DayOfWeek enumeration 0-based or 1-based).
         // Depending on the implemented rules, adjust the expected value.
-        $localDate = LocalDate::epoch(0);
+        $localDate = LocalDate::fromEpochDay(0);
 
         // Example check: If DayOfWeek::Thursday is numeric 3 or 4, adjust accordingly.
         self::assertSame(DayOfWeek::Thursday, $localDate->dayOfWeek);
