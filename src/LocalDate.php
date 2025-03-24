@@ -181,20 +181,14 @@ final class LocalDate implements TemporalAccessor
      */
     public static function from(TemporalAccessor $accessor): self
     {
-        if (!($accessor instanceof self) && ! $accessor->has(TemporalField::Year, TemporalField::Month, TemporalField::Day)) {
+        $year = $accessor->get(TemporalField::Year);
+        $month = $accessor->get(TemporalField::Month);
+        $day = $accessor->get(TemporalField::Day);
+        if ($year === null || $month === null || $day === null) {
             throw new InsufficientDateComponents('Insufficient fields for LocalDate');
         }
 
-        return self::of(
-            year: $accessor->get(TemporalField::Year),
-            month: $accessor->get(TemporalField::Month),
-            day: $accessor->get(TemporalField::Day),
-        );
-    }
-
-    public static function today(Clock $clock = new SystemClock()): self
-    {
-        return self::fromEpochDay(\intdiv($clock->instant()->epochSecond, 86400));
+        return self::of(year: $year, month: $month, day: $day);
     }
 
     /**
