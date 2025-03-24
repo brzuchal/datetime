@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Brzuchal\DateTime\DayOfWeek;
-use Brzuchal\DateTime\Format\ParseException;
+use Brzuchal\DateTime\Format\InvalidInput;
 use Brzuchal\DateTime\Format\TemporalField;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
@@ -102,7 +102,7 @@ final class LocalDateTest extends TestCase
     #[DataProvider('dataParseException')]
     public function testParseException(string $date): void
     {
-        $this->expectException(ParseException::class);
+        $this->expectException(InvalidInput::class);
 
         LocalDate::parse($date);
     }

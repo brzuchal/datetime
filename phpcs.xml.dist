@@ -13,9 +13,10 @@
     <rule ref="Doctrine">
         <exclude name="Generic.Formatting.MultipleStatementAlignment.NotSame"/>
         <exclude name="PSR12.Files.OpenTag.NotAlone"/>
-<!--        <exclude name="Squiz.Commenting.FunctionComment.SpacingAfterParamType"/>-->
-<!--        <exclude name="Squiz.Commenting.FunctionComment.SpacingAfterParamName"/>-->
         <exclude name="Squiz.WhiteSpace.ScopeClosingBrace.ContentBefore"/>
+        <exclude name="PSR2.Classes.ClassDeclaration.OpenBraceNotAlone"/>
+        <exclude name="SlevomatCodingStandard.Classes.EmptyLinesAroundClassBraces.IncorrectEmptyLinesAfterOpeningBrace"/>
+        <exclude name="SlevomatCodingStandard.Classes.EmptyLinesAroundClassBraces.IncorrectEmptyLinesBeforeClosingBrace"/>
     </rule>
     <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
         <properties>

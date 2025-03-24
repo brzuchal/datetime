@@ -2,13 +2,26 @@
 
 namespace Brzuchal\DateTime;
 
+use Brzuchal\DateTime\Clock\SystemClock;
 use Brzuchal\DateTime\Format\DateTimeFormat;
 use Brzuchal\DateTime\Format\DateTimeFormatter;
-use Brzuchal\DateTime\Format\ParseException;
+use Brzuchal\DateTime\Format\InvalidInput;
+use Brzuchal\DateTime\Format\InvalidPattern;
 use Brzuchal\DateTime\Format\TemporalAccessor;
 use Brzuchal\DateTime\Format\TemporalField;
 use Brzuchal\DateTime\Format\UnsupportedPatternSymbol;
 
+/**
+ * Immutable representation of a calendar date without time or timezone.
+ *
+ * Represents a date in ISO-8601 calendar system, such as 2025-03-17.
+ * Does not contain any time-of-day or timezone information.
+ *
+ * Example usage:
+ *   $date = LocalDate::of(2025, 3, 17);
+ *   $today = LocalDate::now();
+ *   $tomorrow = $today->plusDays(1);
+ */
 final class LocalDate implements TemporalAccessor
 {
     /**
@@ -92,18 +105,22 @@ final class LocalDate implements TemporalAccessor
 
     /**
      * Creates a LocalDate from year-month-day.
+     *
      * @throws InvalidDate
      */
     public static function of(int $year, int $month, int $day): self
     {
         if ($month < 1 || $month > 12) {
-            throw new InvalidDate("Month must be 1-12, got {$month}");
+            throw new InvalidDate('Month must be 1-12, got ' . $month);
         }
 
         $isLeapYear = self::isLeapYear($year);
         $monthLengths = self::monthLengths($isLeapYear);
         if ($day < 1 || $day > $monthLengths[$month - 1]) {
-            throw new InvalidDate("Invalid day {$day} for date {$year}-{$month}-{$day}, must be 1-{$monthLengths[$month - 1]}");
+            throw new InvalidDate(\sprintf(
+                'Invalid day %d for date %d-%d-%d, must be 1-%d',
+                $day, $year, $month, $day, $monthLengths[$month - 1],
+            ));
         }
 
         $date = new self($year, $month, $day);
@@ -117,6 +134,7 @@ final class LocalDate implements TemporalAccessor
      * The epoch day is the number of days since 1970-01-01 (ISO calendar system).
      *
      * @param int $epochDay The number of days since the epoch of 1970-01-01.
+     *
      * @return self An instance representing the date corresponding to the given epoch day.
      */
     public static function fromEpochDay(int $epochDay): self
@@ -130,12 +148,18 @@ final class LocalDate implements TemporalAccessor
     }
 
     /**
-     * Parses a date string (default "YYYY-MM-DD").
+     * Parses a date string and returns an instance of the class.
      *
-     * @throws InvalidDate
-     * @throws ParseException
-     * @throws Format\UnsupportedPatternSymbol
-     * @throws InsufficientDateComponents
+     * @param string $text The date string to be parsed.
+     * @param DateTimeFormatter|null $formatter Optional formatter to define the parsing rules. Defaults to Extended ISO Local Date format.
+     *
+     * @return self An instance of the class representing the parsed date.
+     *
+     * @throws InvalidPattern If formatter pattern is incorrect.
+     * @throws InsufficientDateComponents If parse does not provide all necessary information about the input date.
+     * @throws InvalidDate If there is no valid conversion possible.
+     * @throws InvalidInput If any error occurs during parsing.
+     * @throws UnsupportedPatternSymbol If formatter pattern provides unsupported symbols
      */
     public static function parse(string $text, DateTimeFormatter|null $formatter = null): self
     {
@@ -149,9 +173,11 @@ final class LocalDate implements TemporalAccessor
      * The TemporalAccessor must contain the fields Year, Month, and Day.
      *
      * @param TemporalAccessor $accessor The TemporalAccessor to convert.
+     *
      * @return self An instance of the class.
+     *
      * @throws InsufficientDateComponents If the TemporalAccessor does not have sufficient fields.
-     * @throws InvalidDate If there is no valid conversion possible
+     * @throws InvalidDate If there is no valid conversion possible.
      */
     public static function from(TemporalAccessor $accessor): self
     {
@@ -166,10 +192,16 @@ final class LocalDate implements TemporalAccessor
         );
     }
 
+    public static function today(Clock $clock = new SystemClock()): self
+    {
+        return self::fromEpochDay(\intdiv($clock->instant()->epochSecond, 86400));
+    }
+
     /**
      * Returns ISO 8601 Extended string "YYYY-MM-DD".
      *
-     * @throws UnsupportedPatternSymbol
+     * @throws UnsupportedPatternSymbol If formatter pattern provides unsupported symbols
+     * @throws InvalidPattern If formatter pattern is incorrect.
      */
     public function __toString(): string
     {
@@ -211,8 +243,10 @@ final class LocalDate implements TemporalAccessor
      * Returns a copy of this instance with the specified number of years added.
      *
      * @param int $years The number of years to add, may be negative to subtract.
+     *
      * @return self A new instance with the years added.
-     * @throws InvalidDate If there is no valid conversion
+     *
+     * @throws InvalidDate If there is no valid conversion.
      */
     public function plusYears(int $years): self
     {
@@ -223,9 +257,10 @@ final class LocalDate implements TemporalAccessor
      * Returns a new instance with the specified number of months added.
      *
      * @param int $months The number of months to add, may be negative to subtract months.
+     *
      * @return self A new instance adjusted by the specified number of months.
      *
-     * @throws InvalidDate If there is no valid conversion
+     * @throws InvalidDate If there is no valid conversion.
      */
     public function plusMonths(int $months): self
     {
@@ -242,9 +277,10 @@ final class LocalDate implements TemporalAccessor
      * @param int $year The year to resolve.
      * @param int $month The month to resolve (1-12).
      * @param int $day The day to resolve (1-31). This value will be adjusted to the maximum valid day for the specified month and year.
+     *
      * @return self The resolved LocalDate instance.
      *
-     * @throws InvalidDate If there is no valid conversion
+     * @throws InvalidDate If there is no valid conversion.
      */
     private static function resolveAdjusted(int $year, int $month, int $day): self
     {
@@ -298,6 +334,7 @@ final class LocalDate implements TemporalAccessor
      * Returns an array of month lengths for a standard year or a leap year.
      *
      * @param bool $isLeap Indicates whether the year is a leap year (true) or not (false).
+     *
      * @return array{0:31,1:int<28,29>,2:31,3:30,4:31,5:30,6:31,7:31,8:30,9:31,10:30,11:31} An array containing the lengths of each month.
      */
     protected static function monthLengths(bool $isLeap): array
@@ -314,6 +351,7 @@ final class LocalDate implements TemporalAccessor
      * Determines if a given year is a leap year.
      *
      * @param int $year The year to check.
+     *
      * @return bool True if the year is a leap year, false otherwise.
      */
     public static function isLeapYear(int $year): bool
@@ -327,6 +365,7 @@ final class LocalDate implements TemporalAccessor
      * @param int $year The year part of the date.
      * @param int $month The month part of the date (1-12).
      * @param int $day The day part of the date (1-31).
+     *
      * @return int The calculated epoch day corresponding to the provided date.
      */
     private static function calcToEpochDay(int $year, int $month, int $day): int
