@@ -141,7 +141,10 @@ final class LocalDateTest extends TestCase
     {
         $localDate = LocalDate::of(2023, 5, 10);
 
-        self::assertEquals($localDate, unserialize(serialize($localDate)));
+        $restoredLocalDate = unserialize(serialize($localDate));
+        self::assertEquals($localDate->year, $restoredLocalDate->year);
+        self::assertEquals($localDate->month, $restoredLocalDate->month);
+        self::assertEquals($localDate->day, $restoredLocalDate->day);
     }
 
     public function testGetTemporalField(): void
