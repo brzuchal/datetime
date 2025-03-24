@@ -31,7 +31,7 @@ jobs:
         if: success() || failure()
         uses: jwgmeligmeyling/checkstyle-github-action@master
         with:
-          name: PHPStan
+          name: PHPStan report
           path: phpstan-checkstyle.xml
 
       - name: Run PHPCodeSniffer
@@ -41,7 +41,7 @@ jobs:
       - uses: jwgmeligmeyling/checkstyle-github-action@master
         if: success() || failure()
         with:
-          name: PHPCodeSniffer
+          name: PHPCodeSniffer report
           path: phpcs-checkstyle.xml
 
   tests:
@@ -74,5 +74,5 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: success() || failure()
         with:
-          check_name: "PHPUnit (${{ matrix.php }} ${{ matrix.dependency-versions }} deps)"
+          check_name: "PHPUnit report (${{ matrix.php }} ${{ matrix.dependency-versions }} deps)"
           junit_files: "phpunit-*.xml"
