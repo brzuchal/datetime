@@ -39,6 +39,15 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
         return 'ISO';
     }
 
+    /**
+     * Validates whether the given year, month, and day combination represents a valid calendar date.
+     *
+     * @param int $year The year part of the date.
+     * @param int $month The month part of the date (1-12).
+     * @param int $day The day part of the date (1-31, depending on the month and year).
+     *
+     * @return bool True if the provided date is valid; false otherwise.
+     */
     public function isValidDate(int $year, int $month, int $day): bool
     {
         if ($month < 1 || $month > 12) {
@@ -62,13 +71,23 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
         return ($year % 4 === 0) && (($year % 100 !== 0) || ($year % 400 === 0));
     }
 
+    /**
+     * Retrieves the constant value representing the offset in days from the epoch day (1970-01-01)
+     * to the baseline date (0000-03-01).
+     *
+     * @return int The offset in days from the epoch day to the baseline date.
+     */
     protected static function epochDayOffset(): int
     {
         return self::DAYS_0000_TO_1970;
     }
 
     /**
-     * @throws InvalidDate
+     * Converts an Instant to a LocalDate based on the number of epoch days.
+     *
+     * @param Instant $instant The instant representing a specific point in time.
+     *
+     * @return LocalDate The LocalDate corresponding to the provided instant.
      */
     public function date(Instant $instant): LocalDate
     {

@@ -2,6 +2,9 @@
 
 namespace Brzuchal\DateTime\CalendarSystems;
 
+/**
+ * Interface representing a calendar system.
+ */
 interface CalendarSystem
 {
     public function name(): string;
