@@ -83,11 +83,13 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
     }
 
     /**
-     * Converts an Instant to a LocalDate based on the number of epoch days.
+     * Converts an Instant object to a LocalDate representation.
      *
-     * @param Instant $instant The instant representing a specific point in time.
+     * @param Instant $instant The instant to be converted, representing a point in time.
      *
-     * @return LocalDate The LocalDate corresponding to the provided instant.
+     * @return LocalDate The LocalDate representation of the given instant.
+     *
+     * @throws InvalidDate On an invalid date.
      */
     public function date(Instant $instant): LocalDate
     {
@@ -96,6 +98,16 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
         return LocalDate::of($year, $month, $day, $this);
     }
 
+    /**
+     * Converts an epoch day (days since 1970-01-01) to a date represented as a year, month, and day.
+     *
+     * @param int $epochDay The number of days since the epoch date (1970-01-01).
+     *
+     * @return array An associative array containing the calculated date elements:
+     *               - `0`: The year part of the date.
+     *               - `1`: The month part of the date (1-12).
+     *               - `2`: The day part of the date (1-31).
+     */
     public function dateFromEpochDay(int $epochDay): array
     {
         // The offset: number of days from 0000-03-01 to 1970-01-01 and subtract that day
@@ -190,6 +202,15 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
             - ($this->isLeapYear($year) ? 60 : 59); // Adjust for a March-based system
     }
 
+    /**
+     * Determines the era (e.g., BCE or CE) for the given date based on the year.
+     *
+     * @param int $year The year part of the date.
+     * @param int $month The month part of the date (1-12).
+     * @param int $day The day part of the date (1-31).
+     *
+     * @return Era The era corresponding to the provided year.
+     */
     public function eraOf(int $year, int $month, int $day): Era
     {
         return self::$eras[$year <= 0 ? 0 : 1];
