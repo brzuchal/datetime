@@ -2,6 +2,9 @@
 
 namespace Brzuchal\DateTime\Format;
 
+use Brzuchal\DateTime\Temporal\TemporalAccessor;
+use Brzuchal\DateTime\Temporal\TemporalField;
+
 final readonly class TemporalFields implements TemporalAccessor
 {
     public function __construct(
@@ -26,7 +29,7 @@ final readonly class TemporalFields implements TemporalAccessor
         };
     }
 
-    public function has(TemporalField ...$fields): bool
+    public function supports(TemporalField ...$fields): bool
     {
         foreach ($fields as $field) {
             if ($this->get($field) !== null) {

@@ -13,10 +13,11 @@ final class InstantTest extends TestCase
     {
         $instant = Instant::now();
 
-        self::assertEquals(
-            \intval(\microtime(true) * 10_000_000 / self::ROUNDING_FACTOR) ,
-            \intval($instant->ticks / self::ROUNDING_FACTOR),
-        );
+        $expected = (int) (\microtime(true) * 10_000_000 / self::ROUNDING_FACTOR);
+        $actual = (int) ($instant->ticks / self::ROUNDING_FACTOR);
+
+        // Allow a small difference to account for system timing uncertainties
+        self::assertEqualsWithDelta($expected, $actual, 1, 'Ticks differ more than expected');
     }
 
     public function testTicks(): void
