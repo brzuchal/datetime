@@ -8,7 +8,7 @@ namespace Brzuchal\DateTime\CalendarSystems;
  */
 final class CalendarSystemRegistry
 {
-    /** @var array<string, CalendarSystem> */
+    /** @var array<non-empty-string,CalendarSystem> */
     private static array $registry;
 
     /**
@@ -55,20 +55,20 @@ final class CalendarSystemRegistry
     /**
      * Retrieves the names of all registered items in the registry.
      *
-     * @return array An array containing the keys of the registry.
+     * @return list<non-empty-string> An array containing the keys of the registry.
      */
     public static function names(): array
     {
         self::$registry ??= self::default();
 
-        return array_keys(self::$registry);
+        return \array_keys(self::$registry);
     }
 
     /**
      * Provides the default set of calendar systems.
      *
-     * @return array An associative array where the keys are the names of the calendar systems
-     * and the values are the corresponding calendar system instances.
+     * @return array<non-empty-string,CalendarSystem> An associative array where the keys are the names of the calendar systems
+     *                              and the values are the corresponding calendar system instances.
      */
     private static function default(): array
     {

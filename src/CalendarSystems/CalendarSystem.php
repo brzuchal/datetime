@@ -7,6 +7,9 @@ namespace Brzuchal\DateTime\CalendarSystems;
  */
 interface CalendarSystem
 {
+    /**
+     * @return non-empty-string
+     */
     public function name(): string;
 
     /**

@@ -78,7 +78,7 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
      *
      * @param int $dayOfYear The day of the year (1 to 365, or 1 to 366 for leap years).
      * @param bool $leap Indicates whether the year is a leap year.
-     * @return array An array containing two elements: the month (int) and the day (int) within that month.
+     * @return array{0:int<1,12>,1:int} An array containing two elements: the month (int) and the day (int) within that month.
      * @throws DayOfYearOutOfBounds If the dayOfYear is invalid for the given year type.
      * @throws InvalidDayOfYear If the dayOfYear cannot be resolved to a valid month and day.
      */
@@ -206,7 +206,8 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
      * @param int $year The year to be adjusted.
      * @param int $month The month to be adjusted. May overflow (>12) or underflow (<1).
      * @param int $day The day to be adjusted. Accounts for valid month lengths.
-     * @return array An array containing the adjusted year, month, and day in the format
+     *
+     * @return array{0:int,1:int<1,12>,2:int<1,31>} An array containing the adjusted year, month, and day in the format
      */
     private function adjustDate(int $year, int $month, int $day): array
     {

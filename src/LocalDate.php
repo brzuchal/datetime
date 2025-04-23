@@ -6,6 +6,7 @@ use Brzuchal\DateTime\CalendarSystems\CalendarSystem;
 use Brzuchal\DateTime\CalendarSystems\CalendarSystemRegistry;
 use Brzuchal\DateTime\CalendarSystems\Era;
 use Brzuchal\DateTime\CalendarSystems\IsoCalendarSystem;
+use Brzuchal\DateTime\CalendarSystems\UnknownCalendarSystem;
 use Brzuchal\DateTime\Format\DateTimeFormat;
 use Brzuchal\DateTime\Format\DateTimeFormatter;
 use Brzuchal\DateTime\Format\InvalidInput;
@@ -21,9 +22,11 @@ use Brzuchal\DateTime\Format\UnsupportedPatternSymbol;
  * Does not contain any time-of-day or timezone information.
  *
  * Example usage:
+ * ```php
  *   $date = LocalDate::of(2025, 3, 17);
  *   $today = LocalDate::now();
  *   $tomorrow = $today->plusDays(1);
+ * ```
  */
 final class LocalDate implements TemporalAccessor
 {
@@ -44,6 +47,8 @@ final class LocalDate implements TemporalAccessor
 
     /**
      * Represents a number of days from the beginning of year 0
+     *
+     * @api
      */
     private(set) int $epochDay {
         get => $this->epochDay ??= $this->calendar->epochDayFromDate($this->year, $this->month, $this->day);
@@ -93,9 +98,45 @@ final class LocalDate implements TemporalAccessor
     }
 
     /**
-     * Creates a LocalDate from year-month-day.
+     * Creates a new instance from year-month-day.
      *
-     * @throws InvalidDate
+     * This method allows creating a date aligned with a given {@see CalendarSystem}. By default,
+     * it uses the {@see IsoCalendarSystem}, but you can optionally provide a custom one.
+     *
+     * Basic example:
+     * ```php
+     * $date = LocalDate::of(2024, 2, 29);
+     * // Creates February 29th, 2024 in the ISO calendar system.
+     * ```
+     *
+     * Advanced usage with a custom calendar system:
+     * ```php
+     * $customCalendar = new MyCustomCalendarSystem();
+     * $date = LocalDate::of(2024, 2, 29, $customCalendar);
+     * // Creates a date within a custom calendar system.
+     * // Throws InvalidDate if the date isn't valid in that system.
+     * ```
+     *
+     * Handling invalid dates:
+     * ```php
+     * try {
+     *     $date = LocalDate::of(2021, 2, 29);
+     * } catch (InvalidDate $e) {
+     *     // February 29th, 2021 is invalid for the given calendar,
+     *     // so an exception is thrown.
+     *     echo $e->getMessage();
+     * }
+     * ```
+     *
+     * @param int $year The year
+     * @param positive-int $month The month of the year (1–12 for ISO calendar)
+     * @param positive-int $day The day of the month (1–31 depending on the month/calendar system)
+     * @param CalendarSystem $calendarSystem The calendar system used to validate the date.
+     *                                       Defaults to {@see IsoCalendarSystem}.
+     *
+     * @throws InvalidDate When the date is not valid for the given {@see CalendarSystem}.
+     *
+     * @api
      */
     public static function of(
         int $year,
@@ -117,6 +158,8 @@ final class LocalDate implements TemporalAccessor
      * @param int $epochDay The number of days since the epoch of 1970-01-01.
      *
      * @return self An instance representing the date corresponding to the given epoch day.
+     *
+     * @api
      */
     public static function fromEpochDay(int $epochDay, CalendarSystem $calendarSystem = new IsoCalendarSystem()): self
     {
@@ -243,6 +286,7 @@ final class LocalDate implements TemporalAccessor
 
     // Serialization
 
+    /** @ignore */
     public function __serialize(): array
     {
         return [
@@ -253,6 +297,8 @@ final class LocalDate implements TemporalAccessor
 
     /**
      * @param array{date: non-empty-string, calendar: non-empty-string} $data
+     * @throws UnknownCalendarSystem
+     * @ignore
      */
     public function __unserialize(array $data): void
     {

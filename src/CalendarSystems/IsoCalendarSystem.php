@@ -24,6 +24,9 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
      */
     private const int DAYS_0000_TO_1970 = self::DAYS_PER_CYCLE * 5 - (30 * 365) - 7 - 59;
 
+    /**
+     * @var array<non-negative-int,Era>
+     */
     protected static array $eras;
 
     public function __construct()
@@ -103,7 +106,7 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
      *
      * @param int $epochDay The number of days since the epoch date (1970-01-01).
      *
-     * @return array An associative array containing the calculated date elements:
+     * @return array{0:int,1:int<1,12>,2:int<1,31>} An associative array containing the calculated date elements:
      *               - `0`: The year part of the date.
      *               - `1`: The month part of the date (1-12).
      *               - `2`: The day part of the date (1-31).
