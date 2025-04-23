@@ -73,11 +73,7 @@ final class CalendarSystemRegistry
     private static function default(): array
     {
         $iso = new IsoCalendarSystem();
-        $gregorian = new GregorianCalendarSystem();
 
-        return [
-            $iso->name() => $iso,
-            $gregorian->name() => $gregorian,
-        ];
+        return [$iso->name() => $iso];
     }
 }
