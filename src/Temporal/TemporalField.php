@@ -1,9 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Brzuchal\DateTime\Format;
+namespace Brzuchal\DateTime\Temporal;
 
 enum TemporalField
 {
+    case Era;
+
     case Year;
     case Month;
     case Day;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Brzuchal\DateTime\DayOfWeek;
+use Brzuchal\DateTime\Duration;
 use Brzuchal\DateTime\Format\InvalidInput;
-use Brzuchal\DateTime\Format\TemporalField;
+use Brzuchal\DateTime\Temporal\TemporalField;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -14,6 +14,9 @@ use PHPUnit\Framework\TestCase;
 
 final class LocalDateTest extends TestCase
 {
+    private const int SUNDAY_ORD = 6;
+    private const int THURSDAY_ORD = 3;
+
     public function testOfWithRegularDate(): void
     {
         $localDate = LocalDate::of(2023, 5, 10);
@@ -49,23 +52,25 @@ final class LocalDateTest extends TestCase
         $localDate = LocalDate::fromEpochDay(0);
 
         // Example check: If DayOfWeek::Thursday is numeric 3 or 4, adjust accordingly.
-        self::assertSame(DayOfWeek::Thursday, $localDate->dayOfWeek);
+        self::assertSame(self::THURSDAY_ORD, $localDate->dayOfWeek);
     }
 
+    // TODO: extend with all args params and desired date (consider mutations passing leap years)
     public function testPlusDays(): void
     {
         $initial = LocalDate::of(2023, 5, 10);
-        $result = $initial->plusDays(5);
+        $result = $initial->plus(days: 5);
 
         self::assertSame(2023, $result->year);
         self::assertSame(5, $result->month);
         self::assertSame(15, $result->day);
     }
 
+    // TODO: extend with all args params and desired date (consider mutations passing leap years)
     public function testMinusDays(): void
     {
         $initial = LocalDate::of(2023, 5, 10);
-        $result = $initial->minusDays(10);
+        $result = $initial->minus(days: 10);
 
         self::assertSame(2023, $result->year);
         self::assertSame(4, $result->month);
@@ -161,7 +166,7 @@ final class LocalDateTest extends TestCase
         self::assertEquals(23, $localDate->get(TemporalField::Day));
         self::assertEquals(3, $localDate->get(TemporalField::Month));
         self::assertEquals(2025, $localDate->get(TemporalField::Year));
-        self::assertEquals(DayOfWeek::Sunday->value, $localDate->get(TemporalField::DayOfWeek));
+        self::assertEquals(self::SUNDAY_ORD, $localDate->get(TemporalField::DayOfWeek));
         self::assertEquals(82, $localDate->get(TemporalField::DayOfYear));
         self::assertSame(12, $localDate->weekOfYear);
         self::assertSame(3, $localDate->weekOfMonth);
@@ -193,5 +198,56 @@ final class LocalDateTest extends TestCase
         $localDate = LocalDate::of(2023, 2, 28);
 
         self::assertFalse($localDate->isLeapYear);
+    }
+
+    #[DataProvider('dateAdditionProvider')]
+    public function testAdd(string $startDate, int $years, int $months, int $days, string $expectedDate): void
+    {
+        $minus = \str_starts_with($expectedDate, '-');
+        if ($minus) {
+            [$_, $expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
+            $expectedYear = - (int) $expectedYear;
+        } else {
+            [$expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
+        }
+
+        $date = LocalDate::parse($startDate);
+        $result = $date->add(new Duration($years, $months, $days));
+
+        self::assertSame((int) $expectedYear, $result->year);
+        self::assertSame((int) $expectedMonth, $result->month);
+        self::assertSame((int) $expectedDay, $result->day);
+    }
+
+    public static function dateAdditionProvider(): array
+    {
+        return [
+            // Basic date increment tests
+            ['2024-01-01', 1, 2, 10, '2025-03-11'],  // Adding year, month, days
+            ['2024-02-28', 0, 0, 1, '2024-02-29'],  // Leap year check
+
+            // Leap year transition
+            ['2024-02-29', 1, 0, 0, '2025-02-28'],  // Leap year to non-leap year
+            ['2024-02-29', 4, 0, 0, '2028-02-29'],  // Leap year to another leap year
+
+            // Month overflow tests
+            ['2024-11-30', 0, 3, 0, '2025-02-28'],  // Crossing into February
+            ['2024-12-31', 0, 1, 0, '2025-01-31'],  // Handling December month rollover
+
+            // Day overflow within month
+            ['2024-03-31', 0, 1, 0, '2024-04-30'],  // March 31 + 1 month → April 30
+            ['2024-04-30', 0, -1, 0, '2024-03-30'], // April 30 - 1 month → March 30
+
+            // Negative duration handling
+            ['2024-03-15', -1, -2, -40, '2022-12-06'],  // Large backtracking
+
+            // Testing exact month-day relations
+            ['2024-08-31', 0, 1, 0, '2024-09-30'],  // August 31 → September adjustment
+            ['2024-10-31', 0, 1, 0, '2024-11-30'],  // October 31 → November adjustment
+
+            // Extreme values
+            ['9999-12-31', 0, 1, 1, '10000-02-01'], // Large future test
+            ['0001-01-01', -1, -1, -1, '-0001-11-30'], // Large negative test
+        ];
     }
 }

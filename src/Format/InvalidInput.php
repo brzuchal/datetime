@@ -2,6 +2,9 @@
 
 namespace Brzuchal\DateTime\Format;
 
+/**
+ * Represents an exception that is thrown when an invalid input is encountered.
+ */
 final class InvalidInput extends \Exception
 {
 }
