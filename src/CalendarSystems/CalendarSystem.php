@@ -16,7 +16,7 @@ interface CalendarSystem
      * Converts the provided number of epoch days into a date array.
      *
      * @param int $epochDay The number of days since the Unix epoch (January 1, 1970).
-     * @return array{0:int,1:int,2:int} An associative array containing date components, such as year, month, and day.
+     * @return array{0:int,1:positive-int,2:positive-int} An associative array containing date components, such as year, month, and day.
      */
     public function dateFromEpochDay(int $epochDay): array;
 

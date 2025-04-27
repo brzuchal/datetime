@@ -86,7 +86,9 @@ final readonly class IsoStandardDurationFormatDefinition implements DurationForm
         }
 
         if (\str_contains($value, '.') || \str_contains($value, ',')) {
-            [$sec, $frac] = \preg_split('/[.,]/', $value, 2);
+            $parts = \preg_split('/[.,]/', $value, 2);
+            assert($parts !== false);
+            [$sec, $frac] = $parts;
             $nanos = (int) \str_pad(\substr($frac, 0, 9), 9, '0');
             return [(int) $sec, $nanos];
         }

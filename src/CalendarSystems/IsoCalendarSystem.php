@@ -5,6 +5,7 @@ namespace Brzuchal\DateTime\CalendarSystems;
 use Brzuchal\DateTime\Instant;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
+use function PHPUnit\Framework\assertFalse;
 
 /**
  * A calendar system based on the proleptic Gregorian calendar used by the ISO-8601 standard.
@@ -152,9 +153,11 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
 
         // Day of the month: convert from "day of era" value.
         $day = $doy - \intdiv(153 * $mp + 2, 5) + 1;
+        assert($day >= 1 && $day <= 31);
 
         // Month: convert mp to [1, 12]. If mp < 10, then month = mp + 3, otherwise month = mp - 9.
         $month = ($mp < 10) ? $mp + 3 : $mp - 9;
+        assert($month >= 1 && $month <= 12);
 
         // If the month is January or February, they belong to the previous calendar year.
         if ($month <= 2) {
@@ -168,8 +171,8 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
      * Calculates the number of days from the epoch day (1970-01-01) to the provided date.
      *
      * @param int $year The year part of the date.
-     * @param int $month The month part of the date (1-12).
-     * @param int $day The day part of the date (1-31).
+     * @param int<1,12> $month The month part of the date.
+     * @param int<1,31> $day The day part of the date.
      *
      * @return int The calculated epoch day corresponding to the provided date.
      */

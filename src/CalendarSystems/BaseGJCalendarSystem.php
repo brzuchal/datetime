@@ -32,8 +32,8 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
      * Determines the number of days in a specific month of a given year.
      *
      * @param int $year The year for which the month's length is being calculated.
-     * @param int $month The month (1-12) for which the number of days is being determined.
-     * @return int The number of days in the specified month of the given year.
+     * @param int<1,12> $month The month (1-12) for which the number of days is being determined.
+     * @return int<28,31> The number of days in the specified month of the given year.
      */
     public function monthLength(int $year, int $month): int
     {
@@ -59,9 +59,9 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
      * Calculates the day of the year for a given date.
      *
      * @param int $year The year of the date.
-     * @param int $month The month of the date (1-12).
-     * @param int $day The day of the month.
-     * @return int The day of the year corresponding to the given date.
+     * @param int<1,12> $month The month of the date (1-12).
+     * @param int<1,31> $day The day of the month.
+     * @return int<1,366> The day of the year corresponding to the given date.
      */
     public function dayOfYear(int $year, int $month, int $day): int
     {
@@ -70,29 +70,36 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
             $days += $this->monthLength($year, $m);
         }
 
+        assert($days <= 366);
+
         return $days;
     }
 
     /**
      * Determines the month and day within a year from the given day of the year.
      *
-     * @param int $dayOfYear The day of the year (1 to 365, or 1 to 366 for leap years).
+     * @param int<1,366> $dayOfYear The day of the year (1 to 365, or 1 to 366 for leap years).
      * @param bool $leap Indicates whether the year is a leap year.
-     * @return array{0:int<1,12>,1:int} An array containing two elements: the month (int) and the day (int) within that month.
+     * @return array{0:int<1,12>,1:int<1,31>} An array containing two elements: the month (int) and the day (int) within that month.
      * @throws DayOfYearOutOfBounds If the dayOfYear is invalid for the given year type.
      * @throws InvalidDayOfYear If the dayOfYear cannot be resolved to a valid month and day.
      */
     protected function monthDayFromDayOfYear(int $dayOfYear, bool $leap): array
     {
-        if ($dayOfYear < 1 || $leap && $dayOfYear > 366 || !$leap && $dayOfYear > 365) {
+        if (!$leap && $dayOfYear > 365) {
             throw new DayOfYearOutOfBounds("Invalid dayOfYear: {$dayOfYear}.");
         }
+
         $monthLengths = [31, ($leap ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
         $month = 1;
         foreach ($monthLengths as $length) {
             if ($dayOfYear <= $length) {
+                assert($month <= 12);
+                assert($dayOfYear > 0);
+
                 return [$month, $dayOfYear];
             }
+
             $dayOfYear -= $length;
             $month++;
         }
@@ -151,10 +158,15 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
         $marchDoy0 = (int) $doyEst;
         $marchMonth0 = \intdiv($marchDoy0 * 5 + 2, 153);
 
+        $month = ($marchMonth0 + 2) % 12 + 1;
+        assert($month >= 1);
+        $day = $marchDoy0 - \intdiv($marchMonth0 * 306 + 5, 10) + 1;
+        assert($day >= 1 && $day <= 31);
+
         return [
             $yearEst + $adjust + \intdiv($marchMonth0, 10),
-            ($marchMonth0 + 2) % 12 + 1,
-            $marchDoy0 - \intdiv($marchMonth0 * 306 + 5, 10) + 1,
+            $month,
+            $day,
         ];
     }
 
@@ -249,6 +261,8 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
         if ($day > $monthLength) {
             $day = $monthLength;
         }
+
+        assert($day <= $monthLength);
 
         return [$year, $month, $day];
     }

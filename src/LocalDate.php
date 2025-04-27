@@ -31,9 +31,9 @@ use Brzuchal\DateTime\Format\UnsupportedPatternSymbol;
 final class LocalDate implements TemporalAccessor
 {
     /**
-     * @param int       $year  Represents a specific calendar year in the proleptic Gregorian calendar system.
-     * @param int<1,12> $month Represents a month
-     * @param int<1,31> $day   Represents a day.
+     * @param int          $year  Represents a specific calendar year in the proleptic Gregorian calendar system.
+     * @param positive-int $month Represents a month
+     * @param positive-int $day   Represents a day.
      */
     private function __construct(
         public readonly int $year,
@@ -120,9 +120,9 @@ final class LocalDate implements TemporalAccessor
      * Handling invalid dates:
      * ```php
      * try {
-     *     $date = LocalDate::of(2021, 2, 29);
+     *     $date = LocalDate::of(2024, 2, 29);
      * } catch (InvalidDate $e) {
-     *     // February 29th, 2021 is invalid for the given calendar,
+     *     // February 29th, 2024 is invalid for the given calendar,
      *     // so an exception is thrown.
      *     echo $e->getMessage();
      * }
@@ -212,6 +212,9 @@ final class LocalDate implements TemporalAccessor
         $year = $accessor->get(TemporalField::Year);
         $month = $accessor->get(TemporalField::Month);
         $day = $accessor->get(TemporalField::Day);
+        assert($year !== null);
+        assert($month > 0);
+        assert($day > 0);
 
         return self::of(year: $year, month: $month, day: $day);
     }
@@ -302,13 +305,18 @@ final class LocalDate implements TemporalAccessor
      */
     public function __unserialize(array $data): void
     {
-        [$year, $month, $day] = explode('-', $data['date'], 3);
+        $parts = \explode('-', $data['date'], 3);
+        assert(\count($parts) === 3);
+        [$year, $month, $day] = $parts;
+        assert(\is_numeric($year));
+        assert(\is_numeric($month) && (int) $month > 0);
+        assert(\is_numeric($day) && (int) $day > 0);
         $calendar = CalendarSystemRegistry::get($data['calendar']);
 
         self::__construct(
-            year: (int)$year,
-            month: (int)$month,
-            day: (int)$day,
+            year: (int) $year,
+            month: (int) $month,
+            day: (int) $day,
             calendar: $calendar,
         );
     }
