@@ -206,7 +206,7 @@ final class LocalDateTest extends TestCase
         $minus = \str_starts_with($expectedDate, '-');
         if ($minus) {
             [$_, $expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
-            $expectedYear = -$expectedYear;
+            $expectedYear = - (int) $expectedYear;
         } else {
             [$expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
         }
