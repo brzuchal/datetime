@@ -189,6 +189,7 @@ final readonly class Duration
             hours: $this->hours - $hours,
             minutes: $this->minutes - $minutes,
             seconds: $this->seconds - $seconds,
+            nanos: $this->nanos - $nanos,
         );
     }
 }

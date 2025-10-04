@@ -64,12 +64,19 @@ final class DurationTest extends TestCase
         self::assertEquals(new Duration(4, 3, 2), $d);
     }
 
+    public function testMinusHandlesNanoseconds(): void
+    {
+        $d = new Duration(seconds: 10, nanos: 800_000_000)->minus(nanos: 500_000_000);
+
+        self::assertEquals(new Duration(seconds: 10, nanos: 300_000_000), $d);
+    }
+
     public function testHandlesLargeNumbers(): void
     {
         $duration = new Duration(9999, 99, 366, 48, 120, 3661, 2_000_000_000);
         self::assertSame(
             'P9999Y99M366DT48H120M3661.2S',
-            $duration->format()
+            $duration->format(),
         );
     }
 
