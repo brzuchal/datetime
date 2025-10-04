@@ -13,13 +13,13 @@ final readonly class Duration
     /**
      * Initialises a new instance of the class with the specified time components.
      *
-     * @param int $years The number of years to initialise. Default is 0.
-     * @param int $months The number of months to initialise. Default is 0.
-     * @param int $days The number of days to initialise. Default is 0.
-     * @param int $hours The number of hours to initialise. Default is 0.
+     * @param int $years   The number of years to initialise. Default is 0.
+     * @param int $months  The number of months to initialise. Default is 0.
+     * @param int $days    The number of days to initialise. Default is 0.
+     * @param int $hours   The number of hours to initialise. Default is 0.
      * @param int $minutes The number of minutes to initialise. Default is 0.
      * @param int $seconds The number of seconds to initialise. Default is 0.
-     * @param int $nanos The number of nanoseconds to initialise. Default is 0.
+     * @param int $nanos   The number of nanoseconds to initialise. Default is 0.
      * @return void
      */
     public function __construct(
@@ -146,13 +146,13 @@ final readonly class Duration
     /**
      * Returns a new instance with the specified period or duration added to the current values.
      *
-     * @param int $years The number of years to add.
-     * @param int $months The number of months to add.
-     * @param int $days The number of days to add.
-     * @param int $hours The number of hours to add.
+     * @param int $years   The number of years to add.
+     * @param int $months  The number of months to add.
+     * @param int $days    The number of days to add.
+     * @param int $hours   The number of hours to add.
      * @param int $minutes The number of minutes to add.
      * @param int $seconds The number of seconds to add.
-     * @param int $nanos The number of nanoseconds to add.
+     * @param int $nanos   The number of nanoseconds to add.
      * @return self A new instance with the updated values.
      */
     public function plus(int $years = 0, int $months = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self
@@ -171,13 +171,13 @@ final readonly class Duration
     /**
      * Creates a new instance with the specified time values subtracted.
      *
-     * @param int $years The number of years to subtract.
-     * @param int $months The number of months to subtract.
-     * @param int $days The number of days to subtract.
-     * @param int $hours The number of hours to subtract.
+     * @param int $years   The number of years to subtract.
+     * @param int $months  The number of months to subtract.
+     * @param int $days    The number of days to subtract.
+     * @param int $hours   The number of hours to subtract.
      * @param int $minutes The number of minutes to subtract.
      * @param int $seconds The number of seconds to subtract.
-     * @param int $nanos The number of nanoseconds to subtract.
+     * @param int $nanos   The number of nanoseconds to subtract.
      * @return self A new instance with the adjusted time values.
      */
     public function minus(int $years = 0, int $months = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self

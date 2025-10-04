@@ -2,8 +2,6 @@
 
 namespace Brzuchal\DateTime\Temporal;
 
-use Brzuchal\DateTime\Temporal\TemporalField;
-
 interface TemporalAccessor
 {
     public function get(TemporalField $field): int|null;

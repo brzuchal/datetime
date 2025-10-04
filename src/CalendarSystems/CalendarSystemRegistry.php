@@ -15,7 +15,6 @@ final class CalendarSystemRegistry
      * Registers a calendar system into the internal registry.
      *
      * @param CalendarSystem $calendar The calendar system to be registered.
-     * @return void
      */
     public static function register(CalendarSystem $calendar): void
     {

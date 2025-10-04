@@ -10,27 +10,5 @@
 
     <file>src/</file>
 
-    <rule ref="Doctrine">
-        <exclude name="Generic.Formatting.MultipleStatementAlignment.NotSame"/>
-        <exclude name="PSR12.Files.OpenTag.NotAlone"/>
-        <exclude name="Squiz.WhiteSpace.ScopeClosingBrace.ContentBefore"/>
-        <exclude name="PSR2.Classes.ClassDeclaration.OpenBraceNotAlone"/>
-        <exclude name="SlevomatCodingStandard.Classes.EmptyLinesAroundClassBraces.IncorrectEmptyLinesAfterOpeningBrace"/>
-        <exclude name="SlevomatCodingStandard.Classes.EmptyLinesAroundClassBraces.IncorrectEmptyLinesBeforeClosingBrace"/>
-    </rule>
-    <rule ref="SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly">
-        <properties>
-            <property name="allowFallbackGlobalConstants" value="true"/>
-            <property name="allowFallbackGlobalFunctions" value="true"/>
-            <property name="allowFullyQualifiedGlobalClasses" value="true"/>
-            <property name="allowFullyQualifiedGlobalConstants" value="true"/>
-            <property name="allowFullyQualifiedGlobalFunctions" value="true"/>
-        </properties>
-    </rule>
-    <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
-        <properties>
-            <property name="declareOnFirstLine" value="true"/>
-            <property name="linesCountBeforeDeclare" value="0"/>
-        </properties>
-    </rule>
+    <rule ref="Brzuchal"/>
 </ruleset>

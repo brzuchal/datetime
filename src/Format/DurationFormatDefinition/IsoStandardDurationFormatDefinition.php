@@ -13,8 +13,9 @@ final readonly class IsoStandardDurationFormatDefinition implements DurationForm
      */
     public function parse(string $text): Duration
     {
-        if (!preg_match(
-            '/^P
+        if (
+            !preg_match(
+                '/^P
                 (?:(?P<years>\d+(?:[.,]\d+)?)Y)?
                 (?:(?P<months>\d+(?:[.,]\d+)?)M)?
                 (?:(?P<days>\d+(?:[.,]\d+)?)D)?
@@ -24,9 +25,10 @@ final readonly class IsoStandardDurationFormatDefinition implements DurationForm
                     (?:(?P<seconds>\d+(?:[.,]\d+)?)S)?
                 )?
             $/x',
-            $text,
-            $matches
-        )) {
+                $text,
+                $matches,
+            )
+        ) {
             throw new InvalidDuration(sprintf('Invalid ISO 8601 duration string: %s', $text));
         }
 
@@ -90,6 +92,7 @@ final readonly class IsoStandardDurationFormatDefinition implements DurationForm
             assert($parts !== false);
             [$sec, $frac] = $parts;
             $nanos = (int) \str_pad(\substr($frac, 0, 9), 9, '0');
+
             return [(int) $sec, $nanos];
         }
 

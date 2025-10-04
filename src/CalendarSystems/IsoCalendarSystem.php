@@ -5,6 +5,7 @@ namespace Brzuchal\DateTime\CalendarSystems;
 use Brzuchal\DateTime\Instant;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
+
 use function PHPUnit\Framework\assertFalse;
 
 /**
@@ -46,9 +47,9 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
     /**
      * Validates whether the given year, month, and day combination represents a valid calendar date.
      *
-     * @param int $year The year part of the date.
+     * @param int $year  The year part of the date.
      * @param int $month The month part of the date (1-12).
-     * @param int $day The day part of the date (1-31, depending on the month and year).
+     * @param int $day   The day part of the date (1-31, depending on the month and year).
      *
      * @return bool True if the provided date is valid; false otherwise.
      */
@@ -138,7 +139,7 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
             - \intdiv($doe, 1460)    // accounts for 4-year cycles
             + \intdiv($doe, 36524)   // subtract century offsets
             - \intdiv($doe, self::DAYS_PER_CYCLE + 1),  // add back 400-year corrections
-            365
+            365,
         );
 
         // The actual year is:
@@ -156,7 +157,7 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
         assert($day >= 1 && $day <= 31);
 
         // Month: convert mp to [1, 12]. If mp < 10, then month = mp + 3, otherwise month = mp - 9.
-        $month = ($mp < 10) ? $mp + 3 : $mp - 9;
+        $month = $mp < 10 ? $mp + 3 : $mp - 9;
         assert($month >= 1 && $month <= 12);
 
         // If the month is January or February, they belong to the previous calendar year.
@@ -170,9 +171,9 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
     /**
      * Calculates the number of days from the epoch day (1970-01-01) to the provided date.
      *
-     * @param int $year The year part of the date.
+     * @param int $year  The year part of the date.
      * @param int<1,12> $month The month part of the date.
-     * @param int<1,31> $day The day part of the date.
+     * @param int<1,31> $day   The day part of the date.
      *
      * @return int The calculated epoch day corresponding to the provided date.
      */
@@ -195,8 +196,6 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
 
     /**
      * March0 based year offset
-     * @param int $year
-     * @return int
      */
     protected function yearStartDay(int $year): int
     {
@@ -211,9 +210,9 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
     /**
      * Determines the era (e.g., BCE or CE) for the given date based on the year.
      *
-     * @param int $year The year part of the date.
+     * @param int $year  The year part of the date.
      * @param int $month The month part of the date (1-12).
-     * @param int $day The day part of the date (1-31).
+     * @param int $day   The day part of the date (1-31).
      *
      * @return Era The era corresponding to the provided year.
      */

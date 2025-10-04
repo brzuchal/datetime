@@ -31,7 +31,7 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
     /**
      * Determines the number of days in a specific month of a given year.
      *
-     * @param int $year The year for which the month's length is being calculated.
+     * @param int $year  The year for which the month's length is being calculated.
      * @param int<1,12> $month The month (1-12) for which the number of days is being determined.
      * @return int<28,31> The number of days in the specified month of the given year.
      */
@@ -58,9 +58,9 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
     /**
      * Calculates the day of the year for a given date.
      *
-     * @param int $year The year of the date.
+     * @param int $year  The year of the date.
      * @param int<1,12> $month The month of the date (1-12).
-     * @param int<1,31> $day The day of the month.
+     * @param int<1,31> $day   The day of the month.
      * @return int<1,366> The day of the year corresponding to the given date.
      */
     public function dayOfYear(int $year, int $month, int $day): int
@@ -79,7 +79,7 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
      * Determines the month and day within a year from the given day of the year.
      *
      * @param int<1,366> $dayOfYear The day of the year (1 to 365, or 1 to 366 for leap years).
-     * @param bool $leap Indicates whether the year is a leap year.
+     * @param bool $leap      Indicates whether the year is a leap year.
      * @return array{0:int<1,12>,1:int<1,31>} An array containing two elements: the month (int) and the day (int) within that month.
      * @throws DayOfYearOutOfBounds If the dayOfYear is invalid for the given year type.
      * @throws InvalidDayOfYear If the dayOfYear cannot be resolved to a valid month and day.
@@ -198,10 +198,10 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
      * Converts a combination of years and months into the equivalent number of days
      * by adjusting the given date and calculating the difference in epoch days.
      *
-     * @param int $year The starting year of the date.
-     * @param int $month The starting month of the date.
-     * @param int $day The starting day of the date.
-     * @param int $years The number of years to add to the starting date.
+     * @param int $year   The starting year of the date.
+     * @param int $month  The starting month of the date.
+     * @param int $day    The starting day of the date.
+     * @param int $years  The number of years to add to the starting date.
      * @param int $months The number of months to add to the starting date.
      * @return int The number of days representing the difference between the adjusted date and the starting date.
      */
@@ -215,9 +215,9 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
     /**
      * Adjusts the provided date values to ensure valid ranges for year, month, and day.
      *
-     * @param int $year The year to be adjusted.
+     * @param int $year  The year to be adjusted.
      * @param int $month The month to be adjusted. May overflow (>12) or underflow (<1).
-     * @param int $day The day to be adjusted. Accounts for valid month lengths.
+     * @param int $day   The day to be adjusted. Accounts for valid month lengths.
      *
      * @return array{0:int,1:int<1,12>,2:int<1,31>} An array containing the adjusted year, month, and day in the format
      */
@@ -247,6 +247,7 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
                 $month = 12;
                 $year--;
             }
+
             $day += $this->monthLength($year, $month);
         }
 
@@ -254,7 +255,7 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
         $monthLength = $this->monthLength($year, $month);
 
         // Handling leap year transition specifically
-        if ($month == 2 && $day == 29 && !$this->isLeapYear($year)) {
+        if ($month === 2 && $day === 29 && !$this->isLeapYear($year)) {
             $day = 28; // Adjust from Feb 29 to Feb 28 in non-leap years
         }
 

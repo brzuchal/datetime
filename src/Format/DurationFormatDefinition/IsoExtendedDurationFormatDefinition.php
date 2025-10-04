@@ -13,11 +13,13 @@ final readonly class IsoExtendedDurationFormatDefinition implements DurationForm
      */
     public function parse(string $text): Duration
     {
-        if (! \preg_match(
-            '/^P(?P<years>\d{4})-(?P<months>\d{2})-(?P<days>\d{2})T(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2})$/',
-            $text,
-            $matches
-        )) {
+        if (
+            ! \preg_match(
+                '/^P(?P<years>\d{4})-(?P<months>\d{2})-(?P<days>\d{2})T(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2})$/',
+                $text,
+                $matches,
+            )
+        ) {
             throw new InvalidDuration(sprintf('Invalid ISO 8601 extended duration string: %s', $text));
         }
 
@@ -27,7 +29,7 @@ final readonly class IsoExtendedDurationFormatDefinition implements DurationForm
             (int) $matches['days'],
             (int) $matches['hours'],
             (int) $matches['minutes'],
-            (int) $matches['seconds']
+            (int) $matches['seconds'],
         );
     }
 
@@ -40,7 +42,7 @@ final readonly class IsoExtendedDurationFormatDefinition implements DurationForm
             $duration->days,
             $duration->hours,
             $duration->minutes,
-            $duration->seconds
+            $duration->seconds,
         );
     }
 }

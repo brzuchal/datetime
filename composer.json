@@ -4,7 +4,7 @@
   "license": "MIT",
   "authors": [
     {
-      "name": "Michał Marcin Brzuchalski",
+      "name": "Micha\u0142 Marcin Brzuchalski",
       "email": "michal.brzuchalski@gmail.com"
     }
   ],
@@ -23,13 +23,19 @@
     "ext-gmp": ">=8.4"
   },
   "require-dev": {
-    "doctrine/coding-standard": "^12.0",
     "phpunit/phpunit": "^11.5",
-    "phpstan/phpstan": "^2.1"
+    "phpstan/phpstan": "^2.1",
+    "brzuchal/coding-standard": "^1.0"
   },
   "config": {
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true
     }
-  }
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/brzuchal/coding-standard"
+    }
+  ]
 }
