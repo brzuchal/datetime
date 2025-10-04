@@ -24,14 +24,14 @@ final class InstantTest extends TestCase
     {
         $timestamp = \microtime(true);
         $instant = Instant::of($timestamp);
-        self::assertEquals(\intval($timestamp * 10_000_000) , $instant->ticks);
+        self::assertEquals(\intval($timestamp * 10_000_000), $instant->ticks);
     }
 
     public function testEpochDay(): void
     {
         $timestamp = \microtime(true);
         $instant = Instant::of($timestamp);
-        self::assertEquals(\intval($timestamp / (60 * 60 * 24)) , $instant->epochDay);
+        self::assertEquals(\intval($timestamp / (60 * 60 * 24)), $instant->epochDay);
     }
 
     public function testEpochSecond(): void
@@ -46,5 +46,28 @@ final class InstantTest extends TestCase
         $timestamp = \microtime(true);
         $instant = Instant::of($timestamp);
         self::assertEquals(($timestamp * 10_000_000) % 10_000_000 * 100, $instant->nanoAdjustment);
+    }
+
+    public function testNegativeTicksProduceFloorEpochSecond(): void
+    {
+        $instant = new Instant(-1);
+
+        self::assertSame(-1, $instant->epochSecond);
+        self::assertSame(999_999_900, $instant->nanoAdjustment);
+    }
+
+    public function testNegativeTicksProduceFloorEpochDay(): void
+    {
+        $instant = new Instant(-1);
+
+        self::assertSame(-1, $instant->epochDay);
+    }
+
+    public function testOfHandlesNegativeTimestamp(): void
+    {
+        $instant = Instant::of(-0.5);
+
+        self::assertSame(-1, $instant->epochSecond);
+        self::assertSame(500_000_000, $instant->nanoAdjustment);
     }
 }

@@ -6,8 +6,6 @@ use Brzuchal\DateTime\Instant;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
 
-use function PHPUnit\Framework\assertFalse;
-
 /**
  * A calendar system based on the proleptic Gregorian calendar used by the ISO-8601 standard.
  * This class provides functionality to calculate dates and epochs using a 400-year cycle
@@ -98,9 +96,7 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
      */
     public function date(Instant $instant): LocalDate
     {
-        [$year, $month, $day] = $this->dateFromEpochDay((int) ($instant->epochSecond / 86400));
-
-        return LocalDate::of($year, $month, $day, $this);
+        return LocalDate::fromEpochDay($instant->epochDay, $this);
     }
 
     /**

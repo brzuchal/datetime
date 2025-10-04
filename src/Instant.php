@@ -6,6 +6,7 @@ final class Instant
 {
     public const int TICKS_PER_SECOND = 10_000_000; // 1 tick = 100ns
     public const int TICKS_PER_DAY = self::TICKS_PER_SECOND * 86_400; // 86400s per day
+    private const int NANOS_PER_TICK = 100;
 
     public function __construct(
         public readonly int $ticks, // one tick = 100ns
@@ -13,25 +14,60 @@ final class Instant
 
     public static function now(): self
     {
-        [$frac, $sec] = \explode(' ', \microtime());
+        [$fraction, $seconds] = \explode(' ', \microtime());
 
-        return new self(((int) $sec) * self::TICKS_PER_SECOND + (int) \substr($frac, 2, 7));
+        $secondsTicks = (int) $seconds * self::TICKS_PER_SECOND;
+        $fractionDigits = \substr($fraction, 2);
+        $fractionDigits = \substr($fractionDigits, 0, 6);
+        $fractionDigits = \str_pad($fractionDigits, 6, '0');
+        $microseconds = (int) $fractionDigits;
+        $ticks = $secondsTicks + ($microseconds * 10);
+
+        return new self($ticks);
     }
 
     public static function of(int|float $timestamp): self
     {
-        return new self(\intval($timestamp * self::TICKS_PER_SECOND));
+        if (\is_float($timestamp)) {
+            $ticks = (int) \floor($timestamp * self::TICKS_PER_SECOND);
+        } else {
+            $ticks = $timestamp * self::TICKS_PER_SECOND;
+        }
+
+        return new self($ticks);
     }
 
     public int $epochDay {
-        get => \intdiv($this->ticks, self::TICKS_PER_DAY);
+        get => self::floorDiv($this->ticks, self::TICKS_PER_DAY);
     }
 
     public int $epochSecond {
-        get => \intdiv($this->ticks, self::TICKS_PER_SECOND);
+        get => self::floorDiv($this->ticks, self::TICKS_PER_SECOND);
     }
 
     public int $nanoAdjustment {
-        get => ($this->ticks % self::TICKS_PER_SECOND) * 100; // 100ns per tick
+        get => self::floorMod($this->ticks, self::TICKS_PER_SECOND) * self::NANOS_PER_TICK;
+    }
+
+    private static function floorDiv(int $dividend, int $divisor): int
+    {
+        $quotient = \intdiv($dividend, $divisor);
+
+        if ((($dividend ^ $divisor) < 0) && $dividend % $divisor !== 0) {
+            return $quotient - 1;
+        }
+
+        return $quotient;
+    }
+
+    private static function floorMod(int $dividend, int $divisor): int
+    {
+        $remainder = $dividend % $divisor;
+
+        if ($remainder < 0) {
+            $remainder += \abs($divisor);
+        }
+
+        return $remainder;
     }
 }

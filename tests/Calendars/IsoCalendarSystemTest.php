@@ -58,9 +58,19 @@ final class IsoCalendarSystemTest extends TestCase
         $instant = new Instant(-22089899720000000);
         $date = $this->calendar->date($instant);
 
-        self::assertSame(1900, $date->year);
-        self::assertSame(1, $date->month);
-        self::assertSame(1, $date->day);
+        self::assertSame(1899, $date->year);
+        self::assertSame(12, $date->month);
+        self::assertSame(31, $date->day);
+    }
+
+    public function testInstantJustBeforeEpoch(): void
+    {
+        $instant = new Instant(-1);
+        $date = $this->calendar->date($instant);
+
+        self::assertSame(1969, $date->year);
+        self::assertSame(12, $date->month);
+        self::assertSame(31, $date->day);
     }
 
     public function testEraOfCommonEra(): void
