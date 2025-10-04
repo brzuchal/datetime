@@ -11,9 +11,9 @@ use Brzuchal\DateTime\Format\DateTimeFormat;
 use Brzuchal\DateTime\Format\DateTimeFormatter;
 use Brzuchal\DateTime\Format\InvalidInput;
 use Brzuchal\DateTime\Format\InvalidPattern;
+use Brzuchal\DateTime\Format\UnsupportedPatternSymbol;
 use Brzuchal\DateTime\Temporal\TemporalAccessor;
 use Brzuchal\DateTime\Temporal\TemporalField;
-use Brzuchal\DateTime\Format\UnsupportedPatternSymbol;
 
 /**
  * Immutable representation of a calendar date without time or timezone.
@@ -47,8 +47,6 @@ final class LocalDate implements TemporalAccessor
 
     /**
      * Represents a number of days from the beginning of year 0
-     *
-     * @api
      */
     private(set) int $epochDay {
         get => $this->epochDay ??= $this->calendar->epochDayFromDate($this->year, $this->month, $this->day);
@@ -128,15 +126,12 @@ final class LocalDate implements TemporalAccessor
      * }
      * ```
      *
-     * @param int $year The year
-     * @param positive-int $month The month of the year (1–12 for ISO calendar)
-     * @param positive-int $day The day of the month (1–31 depending on the month/calendar system)
-     * @param CalendarSystem $calendarSystem The calendar system used to validate the date.
-     *                                       Defaults to {@see IsoCalendarSystem}.
+     * @param int            $year           Year component.
+     * @param positive-int   $month          Month of the year (1–12 for the ISO calendar).
+     * @param positive-int   $day            Day of the month (1–31 depending on the calendar system).
+     * @param CalendarSystem $calendarSystem Calendar system used to validate the date; defaults to {@see IsoCalendarSystem}.
      *
-     * @throws InvalidDate When the date is not valid for the given {@see CalendarSystem}.
-     *
-     * @api
+     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
      */
     public static function of(
         int $year,
@@ -155,11 +150,11 @@ final class LocalDate implements TemporalAccessor
      * Creates an instance of the class from the specified epoch day.
      * The epoch day is the number of days since 1970-01-01 (ISO calendar system).
      *
-     * @param int $epochDay The number of days since the epoch of 1970-01-01.
+     * @param int $epochDay       The number of days since the epoch of 1970-01-01.
+     *
+     * @param CalendarSystem $calendarSystem Calendar system used to interpret the epoch day; defaults to {@see IsoCalendarSystem}.
      *
      * @return self An instance representing the date corresponding to the given epoch day.
-     *
-     * @api
      */
     public static function fromEpochDay(int $epochDay, CalendarSystem $calendarSystem = new IsoCalendarSystem()): self
     {
@@ -174,7 +169,7 @@ final class LocalDate implements TemporalAccessor
     /**
      * Parses a date string and returns an instance of the class.
      *
-     * @param string $text The date string to be parsed.
+     * @param string $text      The date string to be parsed.
      * @param DateTimeFormatter|null $formatter Optional formatter to define the parsing rules. Defaults to Extended ISO Local Date format.
      *
      * @return self An instance of the class representing the parsed date.
@@ -183,7 +178,7 @@ final class LocalDate implements TemporalAccessor
      * @throws InsufficientDateComponents If parse does not provide all necessary information about the input date.
      * @throws InvalidDate If there is no valid conversion possible.
      * @throws InvalidInput If any error occurs during parsing.
-     * @throws UnsupportedPatternSymbol If formatter pattern provides unsupported symbols
+     * @throws UnsupportedPatternSymbol If formatter pattern provides unsupported symbols.
      */
     public static function parse(string $text, DateTimeFormatter|null $formatter = null): self
     {
@@ -206,7 +201,7 @@ final class LocalDate implements TemporalAccessor
     public static function from(TemporalAccessor $accessor): self
     {
         if (! $accessor->supports(TemporalField::Year, TemporalField::Month, TemporalField::Day)) {
-            throw new InsufficientDateComponents(\sprintf('Insufficient fields for %s', LocalDate::class));
+            throw new InsufficientDateComponents(\sprintf('Insufficient fields for %s', self::class));
         }
 
         $year = $accessor->get(TemporalField::Year);
@@ -222,7 +217,7 @@ final class LocalDate implements TemporalAccessor
     /**
      * Returns ISO 8601 Extended string "YYYY-MM-DD".
      *
-     * @throws UnsupportedPatternSymbol If formatter pattern provides unsupported symbols
+     * @throws UnsupportedPatternSymbol If formatter pattern provides unsupported symbols.
      * @throws InvalidPattern If the formatter pattern is incorrect.
      */
     public function __toString(): string
@@ -231,16 +226,42 @@ final class LocalDate implements TemporalAccessor
     }
 
     // Mutators
+
+    /**
+     * Returns a date shifted forward by the specified offsets.
+     *
+     * @param int $years  Number of years to add.
+     * @param int $months Number of months to add.
+     * @param int $days   Number of days to add.
+     *
+     * @return self Updated date instance.
+     */
     public function plus(int $years = 0, int $months = 0, int $days = 0): self
     {
         return $this->add(new Duration($years, $months, $days));
     }
 
+    /**
+     * Returns a date shifted backward by the specified offsets.
+     *
+     * @param int $years  Number of years to subtract.
+     * @param int $months Number of months to subtract.
+     * @param int $days   Number of days to subtract.
+     *
+     * @return self Updated date instance.
+     */
     public function minus(int $years = 0, int $months = 0, int $days = 0): self
     {
         return $this->subtract(new Duration($years, $months, $days));
     }
 
+    /**
+     * Adds a duration to the current date.
+     *
+     * @param Duration $duration Duration composed of years, months, and days.
+     *
+     * @return self Adjusted date instance.
+     */
     public function add(Duration $duration): self
     {
         return self::fromEpochDay(
@@ -255,6 +276,13 @@ final class LocalDate implements TemporalAccessor
         );
     }
 
+    /**
+     * Subtracts a duration from the current date.
+     *
+     * @param Duration $duration Duration composed of years, months, and days.
+     *
+     * @return self Adjusted date instance.
+     */
     public function subtract(Duration $duration): self
     {
         return self::fromEpochDay(
@@ -289,7 +317,11 @@ final class LocalDate implements TemporalAccessor
 
     // Serialization
 
-    /** @ignore */
+    /**
+     * @return array{date: non-empty-string, calendar: non-empty-string}
+     *
+     * @ignore
+     */
     public function __serialize(): array
     {
         return [
@@ -300,7 +332,8 @@ final class LocalDate implements TemporalAccessor
 
     /**
      * @param array{date: non-empty-string, calendar: non-empty-string} $data
-     * @throws UnknownCalendarSystem
+     *
+     * @throws UnknownCalendarSystem When the calendar system cannot be resolved.
      * @ignore
      */
     public function __unserialize(array $data): void
@@ -323,6 +356,13 @@ final class LocalDate implements TemporalAccessor
 
     // TemporalAccessor
 
+    /**
+     * Returns the value for a requested temporal field if supported.
+     *
+     * @param TemporalField $field Temporal field to resolve.
+     *
+     * @return int|null Field value or null when not available.
+     */
     public function get(TemporalField $field): int|null
     {
         return match ($field) {
@@ -336,18 +376,27 @@ final class LocalDate implements TemporalAccessor
         };
     }
 
-    public function supports(TemporalField... $fields): bool
+    /**
+     * Verifies whether all provided temporal fields are available on this instance.
+     *
+     * @param TemporalField ...$fields Fields to validate.
+     *
+     * @return bool True when every field is supported.
+     */
+    public function supports(TemporalField ...$fields): bool
     {
         foreach ($fields as $field) {
-            if (match ($field) {
-                TemporalField::Era,
-                TemporalField::Year,
-                TemporalField::Month,
-                TemporalField::Day,
-                TemporalField::DayOfYear,
-                TemporalField::DayOfWeek => true,
-                default => false,
-            }) {
+            if (
+                match ($field) {
+                    TemporalField::Era,
+                    TemporalField::Year,
+                    TemporalField::Month,
+                    TemporalField::Day,
+                    TemporalField::DayOfYear,
+                    TemporalField::DayOfWeek => true,
+                    default => false,
+                }
+            ) {
                 continue;
             }
 

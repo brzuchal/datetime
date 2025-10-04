@@ -10,5 +10,8 @@
 
     <file>src/</file>
 
-    <rule ref="Brzuchal"/>
+    <rule ref="Brzuchal">
+        <exclude name="PSR2.Classes.PropertyDeclaration.Multiple"/>
+        <exclude name="PSR2.Classes.PropertyDeclaration.SpacingAfterType"/>
+    </rule>
 </ruleset>

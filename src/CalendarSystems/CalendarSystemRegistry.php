@@ -35,7 +35,7 @@ final class CalendarSystemRegistry
         self::$registry ??= self::default();
 
         return self::$registry[$name]
-            ?? throw new UnknownCalendarSystem("Unknown calendar system: $name");
+            ?? throw new UnknownCalendarSystem('Unknown calendar system: ' . $name);
     }
 
     /**

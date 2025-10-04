@@ -87,7 +87,7 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
     protected function monthDayFromDayOfYear(int $dayOfYear, bool $leap): array
     {
         if (!$leap && $dayOfYear > 365) {
-            throw new DayOfYearOutOfBounds("Invalid dayOfYear: {$dayOfYear}.");
+            throw new DayOfYearOutOfBounds('Invalid dayOfYear: ' . $dayOfYear . '.');
         }
 
         $monthLengths = [31, ($leap ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -104,7 +104,7 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
             $month++;
         }
 
-        throw new InvalidDayOfYear("Invalid dayOfYear: {$dayOfYear}");
+        throw new InvalidDayOfYear('Invalid dayOfYear: ' . $dayOfYear);
     }
 
     /**
