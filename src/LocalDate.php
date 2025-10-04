@@ -324,8 +324,11 @@ final class LocalDate implements TemporalAccessor
      */
     public function __serialize(): array
     {
+        $date = (string) $this;
+        assert($date !== '');
+
         return [
-            'date' => (string) $this,
+            'date' => $date,
             'calendar' => $this->calendar->name(),
         ];
     }
