@@ -82,16 +82,15 @@ final class LocalDate implements TemporalAccessor
      * and weeks start on a Monday.
      */
     public int $weekOfYear {
-        get => \intdiv($this->dayOfYear - $this->dayOfWeek + 10, 7);
+        get => $this->calculateWeekOfYear();
     }
 
     /**
      * Calculates the week of the month for the current date.
-     * The value is determined by dividing the adjusted day of the month
-     * (offset by the day of the week and 10) by 7.
+     * The value is determined by counting ISO weeks starting on Monday within the month.
      */
     public int $weekOfMonth {
-        get => \intdiv($this->day - $this->dayOfWeek + 10, 7);
+        get => $this->calculateWeekOfMonth();
     }
 
     public Era $era {
@@ -427,5 +426,47 @@ final class LocalDate implements TemporalAccessor
         }
 
         return intdiv($totalNanos, self::NANOS_PER_DAY);
+    }
+
+    private function calculateWeekOfYear(): int
+    {
+        $dayOfWeek = $this->dayOfWeek + 1; // convert to 1 (Mon) - 7 (Sun)
+        $week = intdiv($this->dayOfYear - $dayOfWeek + 10, 7);
+
+        if ($week < 1) {
+            return $this->weeksInWeekBasedYear($this->year - 1);
+        }
+
+        $weeksInYear = $this->weeksInWeekBasedYear($this->year);
+        if ($week > $weeksInYear) {
+            return 1;
+        }
+
+        return $week;
+    }
+
+    private function calculateWeekOfMonth(): int
+    {
+        $currentWeekStart = $this->epochDay - $this->dayOfWeek;
+        $firstOfMonth = self::of($this->year, $this->month, 1, $this->calendar);
+        $firstWeekStart = $firstOfMonth->epochDay - $firstOfMonth->dayOfWeek;
+
+        return intdiv($currentWeekStart - $firstWeekStart, 7) + 1;
+    }
+
+    private function weeksInWeekBasedYear(int $year): int
+    {
+        $start = $this->weekYearStartEpochDay($year);
+        $next = $this->weekYearStartEpochDay($year + 1);
+
+        return intdiv($next - $start, 7);
+    }
+
+    private function weekYearStartEpochDay(int $year): int
+    {
+        $jan4Epoch = $this->calendar->epochDayFromDate($year, 1, 4);
+        $jan4 = self::fromEpochDay($jan4Epoch, $this->calendar);
+
+        return $jan4->epochDay - $jan4->dayOfWeek;
     }
 }

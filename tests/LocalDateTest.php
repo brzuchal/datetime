@@ -215,7 +215,7 @@ final class LocalDateTest extends TestCase
         self::assertEquals(self::SUNDAY_ORD, $localDate->get(TemporalField::DayOfWeek));
         self::assertEquals(82, $localDate->get(TemporalField::DayOfYear));
         self::assertSame(12, $localDate->weekOfYear);
-        self::assertSame(3, $localDate->weekOfMonth);
+        self::assertSame(4, $localDate->weekOfMonth);
     }
 
     public function testWeekOfYear(): void
@@ -225,11 +225,25 @@ final class LocalDateTest extends TestCase
         self::assertSame(12, $localDate->weekOfYear);
     }
 
+    public function testWeekOfYearIsoBoundaries(): void
+    {
+        self::assertSame(53, LocalDate::of(2021, 1, 1)->weekOfYear);
+        self::assertSame(1, LocalDate::of(2021, 1, 4)->weekOfYear);
+        self::assertSame(52, LocalDate::of(2022, 1, 1)->weekOfYear);
+    }
+
     public function testWeekOfMonth(): void
     {
         $localDate = LocalDate::of(2025, 3, 23);
 
-        self::assertSame(3, $localDate->weekOfMonth);
+        self::assertSame(4, $localDate->weekOfMonth);
+    }
+
+    public function testWeekOfMonthAcrossBoundary(): void
+    {
+        self::assertSame(1, LocalDate::of(2021, 5, 1)->weekOfMonth);
+        self::assertSame(2, LocalDate::of(2021, 5, 3)->weekOfMonth);
+        self::assertSame(6, LocalDate::of(2021, 5, 31)->weekOfMonth);
     }
 
     public function testIsLeapYear(): void
