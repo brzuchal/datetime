@@ -73,6 +73,23 @@ final class IsoCalendarSystemTest extends TestCase
         self::assertSame(31, $date->day);
     }
 
+    public function testEpochDayForNegativeYears(): void
+    {
+        $cases = [
+            [-1, 3, 1],
+            [-2, 3, 1],
+            [-400, 3, 1],
+            [-401, 3, 1],
+        ];
+
+        foreach ($cases as [$year, $month, $day]) {
+            $epoch = $this->calendar->epochDayFromDate($year, $month, $day);
+            $date = $this->calendar->dateFromEpochDay($epoch);
+
+            self::assertSame([$year, $month, $day], $date);
+        }
+    }
+
     public function testEraOfCommonEra(): void
     {
         $date = LocalDate::of(2024, 3, 1, $this->calendar);

@@ -293,7 +293,7 @@ final class LocalDateTest extends TestCase
 
             // Extreme values
             ['9999-12-31', 0, 1, 1, '10000-02-01'], // Large future test
-            ['0001-01-01', -1, -1, -1, '-0001-12-01'], // Large negative test
+            ['0001-01-01', -1, -1, -1, '-0001-11-30'], // Large negative test
         ];
     }
 }
