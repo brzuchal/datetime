@@ -1,0 +1,20 @@
+# Changelog
+
+## Unreleased
+- **LocalDate duration arithmetic**
+  - Respect hours/minutes/seconds/nanos when adding or subtracting durations from LocalDate.
+  - Introduce day-level conversion of Duration time components so sub-day offsets roll dates correctly.
+  - Expand the LocalDate test suite with BCE transitions and time-based duration cases.
+- **ISO duration parsing**
+  - Reject fractional years/months/days/hours/minutes in ISO standard duration parsing instead of truncating.
+  - Support fractional seconds in ISO extended duration parsing/formatting with nanosecond precision.
+  - Add regression tests covering fractional inputs for both duration formats.
+- **Calendar adjustments**
+  - Skip astronomical year zero when shifting months across BCE/CE boundaries.
+  - Normalise ISO week-based arithmetic for BCE years to avoid invalid modulo results.
+  - Normalise IsoCalendarSystem 400-year cycle arithmetic so yearStartDay() remains accurate for negative years.
+  - Fix LocalDate weekOfYear/weekOfMonth calculations to follow ISO rules and add boundary tests.
+- **Registry improvements**
+  - Add CalendarSystemRegistry::all(), variadic register(), and reset() helpers for better discovery and test isolation.
+- **Dependency clean-up**
+  - Remove unused ext-gmp requirement from composer metadata and docs.

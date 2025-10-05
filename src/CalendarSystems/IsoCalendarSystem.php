@@ -196,16 +196,16 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
     protected function yearStartDay(int $year): int
     {
         $cycles = \intdiv($year, 400);
-        if ($year < 0 && $year % 400 !== 0) {
-            $cycles--;
+        $yearInCycle = $year - $cycles * 400;
+        if ($yearInCycle < 0) {
+            --$cycles;
+            $yearInCycle += 400;
         }
 
-        $mod = $year - $cycles * 400;
-
         return $cycles * self::DAYS_PER_CYCLE // calculate how many full 400-year cycles fit
-            + $mod * 365 // each remaining non-leap year adds 265
-            + \intdiv($mod, 4) // adds one extra day for every 4 years that are not leap
-            - \intdiv($mod, 100) // removes century years that are not leap years
+            + $yearInCycle * 365 // each remaining non-leap year adds 365
+            + \intdiv($yearInCycle, 4) // adds one extra day for every 4 years that are not leap
+            - \intdiv($yearInCycle, 100) // removes century years that are not leap years
             - ($this->isLeapYear($year) ? 60 : 59); // Adjust for a March-based system
     }
 

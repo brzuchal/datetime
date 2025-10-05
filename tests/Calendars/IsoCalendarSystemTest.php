@@ -76,9 +76,12 @@ final class IsoCalendarSystemTest extends TestCase
     public function testEpochDayForNegativeYears(): void
     {
         $cases = [
+            [-1, 1, 1],
             [-1, 3, 1],
+            [-1, 12, 31],
             [-2, 3, 1],
             [-400, 3, 1],
+            [-401, 1, 1],
             [-401, 3, 1],
         ];
 
