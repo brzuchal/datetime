@@ -34,6 +34,18 @@ final class DurationTest extends TestCase
         self::assertEquals(new Duration(1, 2, 3, 4, 5, 6), $duration);
     }
 
+    public function testParsingExtendedFormatWithFractionalSeconds(): void
+    {
+        $duration = Duration::parse('P0001-02-03T04:05:06.789000123', DurationFormat::IsoExtended);
+        self::assertEquals(new Duration(1, 2, 3, 4, 5, 6, 789_000_123), $duration);
+    }
+
+    public function testFormattingExtendedFormatWithFractionalSeconds(): void
+    {
+        $duration = new Duration(1, 2, 3, 4, 5, 6, 789_000_000);
+        self::assertSame('P0001-02-03T04:05:06.789', $duration->format(DurationFormat::IsoExtended));
+    }
+
     public function testFormattingStandardFormat(): void
     {
         $duration = new Duration(1, 2, 3, 4, 5, 6, 789_000_000);
@@ -104,4 +116,9 @@ final class DurationTest extends TestCase
         Duration::parse('PT1.25H');
     }
 
+    public function testParsingExtendedFormatRejectsFractionalHours(): void
+    {
+        $this->expectException(InvalidDuration::class);
+        Duration::parse('P0001-02-03T04.5:05:06', DurationFormat::IsoExtended);
+    }
 }
