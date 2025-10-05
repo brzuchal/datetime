@@ -27,19 +27,34 @@ final readonly class IsoStandardDurationFormatDefinition implements DurationForm
             $/x',
                 $text,
                 $matches,
+                \PREG_UNMATCHED_AS_NULL,
             )
         ) {
             throw new InvalidDuration(sprintf('Invalid ISO 8601 duration string: %s', $text));
         }
 
-        $years = (int) ($matches['years'] ?? 0);
-        $months = (int) ($matches['months'] ?? 0);
-        $days = (int) ($matches['days'] ?? 0);
-        $hours = (int) ($matches['hours'] ?? 0);
-        $minutes = (int) ($matches['minutes'] ?? 0);
+        foreach (['years', 'months', 'days', 'hours', 'minutes'] as $component) {
+            $value = $matches[$component];
+            if ($value === null) {
+                continue;
+            }
+
+            if (\strpbrk($value, '.,') !== false) {
+                throw new InvalidDuration(\sprintf('Fractional %s component is not supported: %s', $component, $value));
+            }
+        }
+
         [$seconds, $nanos] = self::parseSecondsAndNanos($matches['seconds'] ?? null);
 
-        return new Duration($years, $months, $days, $hours, $minutes, $seconds, $nanos);
+        return new Duration(
+            years: (int) $matches['years'],
+            months: (int) $matches['months'],
+            days: (int) $matches['days'],
+            hours: (int) $matches['hours'],
+            minutes: (int) $matches['minutes'],
+            seconds: $seconds,
+            nanos: $nanos,
+        );
     }
 
     public function format(Duration $duration): string

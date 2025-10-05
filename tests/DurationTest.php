@@ -92,4 +92,16 @@ final class DurationTest extends TestCase
         Duration::parse('P9999-13-40T25:61:9999', DurationFormat::IsoExtended);
     }
 
+    public function testParsingFractionalYearsIsRejected(): void
+    {
+        $this->expectException(InvalidDuration::class);
+        Duration::parse('P1.5Y');
+    }
+
+    public function testParsingFractionalHoursIsRejected(): void
+    {
+        $this->expectException(InvalidDuration::class);
+        Duration::parse('PT1.25H');
+    }
+
 }
