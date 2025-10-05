@@ -338,25 +338,58 @@ final class LocalDate implements TemporalAccessor
     }
 
     /**
-     * @param array{date: non-empty-string, calendar: non-empty-string} $data
+     * @param array<string,mixed> $data
      *
      * @throws UnknownCalendarSystem When the calendar system cannot be resolved.
      * @ignore
      */
     public function __unserialize(array $data): void
     {
+        if (! isset($data['date'], $data['calendar'])) {
+            throw new \UnexpectedValueException('Serialized LocalDate payload missing required keys.');
+        }
+
+        if (! \is_string($data['date']) || $data['date'] === '') {
+            throw new \UnexpectedValueException('Serialized LocalDate date must be a non-empty string.');
+        }
+
+        if (! \is_string($data['calendar']) || $data['calendar'] === '') {
+            throw new \UnexpectedValueException('Serialized LocalDate calendar must be a non-empty string.');
+        }
+
         $parts = \explode('-', $data['date'], 3);
-        assert(\count($parts) === 3);
+        if (\count($parts) !== 3) {
+            throw new \UnexpectedValueException('Serialized LocalDate date is malformed.');
+        }
+
         [$year, $month, $day] = $parts;
-        assert(\is_numeric($year));
-        assert(\is_numeric($month) && (int) $month > 0);
-        assert(\is_numeric($day) && (int) $day > 0);
+
+        if (! \ctype_digit(ltrim($year, '+-'))) {
+            throw new \UnexpectedValueException('Serialized LocalDate year must be an integer value.');
+        }
+
+        if (! \ctype_digit($month) || (int) $month <= 0) {
+            throw new \UnexpectedValueException('Serialized LocalDate month must be a positive integer.');
+        }
+
+        if (! \ctype_digit($day) || (int) $day <= 0) {
+            throw new \UnexpectedValueException('Serialized LocalDate day must be a positive integer.');
+        }
+
         $calendar = CalendarSystemRegistry::get($data['calendar']);
 
+        $yearValue = (int) $year;
+        $monthValue = (int) $month;
+        $dayValue = (int) $day;
+
+        if (! $calendar->isValidDate($yearValue, $monthValue, $dayValue)) {
+            throw new \UnexpectedValueException('Serialized LocalDate contains a date invalid for the provided calendar system.');
+        }
+
         self::__construct(
-            year: (int) $year,
-            month: (int) $month,
-            day: (int) $day,
+            year: $yearValue,
+            month: $monthValue,
+            day: $dayValue,
             calendar: $calendar,
         );
     }

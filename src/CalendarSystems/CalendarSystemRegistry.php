@@ -14,9 +14,9 @@ final class CalendarSystemRegistry
     private static bool $initialised = false;
 
     /**
-     * Registers a calendar system into the internal registry.
+     * Registers one or more calendar systems into the internal registry.
      *
-     * @param CalendarSystem $calendar The calendar system to be registered.
+     * @param CalendarSystem ...$calendars Calendar systems to be registered.
      */
     public static function register(CalendarSystem ...$calendars): void
     {

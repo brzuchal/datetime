@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use Brzuchal\DateTime\CalendarSystems\UnknownCalendarSystem;
 use Brzuchal\DateTime\Duration;
 use Brzuchal\DateTime\Format\InvalidInput;
-use Brzuchal\DateTime\Temporal\TemporalField;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
+use Brzuchal\DateTime\Temporal\TemporalField;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use UnexpectedValueException;
 
 final class LocalDateTest extends TestCase
 {
@@ -205,6 +207,46 @@ final class LocalDateTest extends TestCase
         self::assertEquals($localDate->day, $restoredLocalDate->day);
     }
 
+    public function testUnserializeRejectsMissingCalendar(): void
+    {
+        $class = LocalDate::class;
+        $payload = 'O:' . \strlen($class) . ':"' . $class . '":1:{s:4:"date";s:10:"2023-05-10";}';
+
+        $this->expectException(UnexpectedValueException::class);
+
+        unserialize($payload, ['allowed_classes' => [LocalDate::class]]);
+    }
+
+    public function testUnserializeRejectsMalformedDate(): void
+    {
+        $class = LocalDate::class;
+        $payload = 'O:' . \strlen($class) . ':"' . $class . '":2:{s:4:"date";s:10:"2023-0a-10";s:8:"calendar";s:3:"ISO";}';
+
+        $this->expectException(UnexpectedValueException::class);
+
+        unserialize($payload, ['allowed_classes' => [LocalDate::class]]);
+    }
+
+    public function testUnserializeRejectsInvalidCalendarDate(): void
+    {
+        $class = LocalDate::class;
+        $payload = 'O:' . \strlen($class) . ':"' . $class . '":2:{s:4:"date";s:10:"2023-02-30";s:8:"calendar";s:3:"ISO";}';
+
+        $this->expectException(UnexpectedValueException::class);
+
+        unserialize($payload, ['allowed_classes' => [LocalDate::class]]);
+    }
+
+    public function testUnserializeRejectsUnknownCalendar(): void
+    {
+        $class = LocalDate::class;
+        $payload = 'O:' . \strlen($class) . ':"' . $class . '":2:{s:4:"date";s:10:"2023-05-10";s:8:"calendar";s:4:"FAKE";}';
+
+        $this->expectException(UnknownCalendarSystem::class);
+
+        unserialize($payload, ['allowed_classes' => [LocalDate::class]]);
+    }
+
     public function testGetTemporalField(): void
     {
         $localDate = LocalDate::of(2025, 3, 23);
@@ -266,7 +308,7 @@ final class LocalDateTest extends TestCase
         $minus = \str_starts_with($expectedDate, '-');
         if ($minus) {
             [$_, $expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
-            $expectedYear = - (int) $expectedYear;
+            $expectedYear = -(int) $expectedYear;
         } else {
             [$expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
         }

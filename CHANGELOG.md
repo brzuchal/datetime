@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- **Security**
+  - Harden `LocalDate::__unserialize()` to validate payload structure, numeric fields, and calendar membership before instantiation.
+  - Add regression tests covering malicious serialized input to prevent assertion bypasses and fatal errors.
 - **LocalDate duration arithmetic**
   - Respect hours/minutes/seconds/nanos when adding or subtracting durations from LocalDate.
   - Introduce day-level conversion of Duration time components so sub-day offsets roll dates correctly.

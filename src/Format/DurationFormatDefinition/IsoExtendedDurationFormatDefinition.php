@@ -58,6 +58,8 @@ final readonly class IsoExtendedDurationFormatDefinition implements DurationForm
 
     /**
      * @return array{0:int,1:int}
+     *
+     * @throws InvalidDuration
      */
     private static function parseSeconds(string $seconds): array
     {
@@ -69,8 +71,12 @@ final readonly class IsoExtendedDurationFormatDefinition implements DurationForm
             return [(int) $seconds, 0];
         }
 
-        [$whole, $fraction] = \preg_split('/[.,]/', $seconds, 2);
-        assert($fraction !== null);
+        $parts = \preg_split('/[.,]/', $seconds, 2);
+        if ($parts === false || ! isset($parts[1])) {
+            throw new InvalidDuration('Unable to parse fractional seconds from "' . $seconds . '".');
+        }
+
+        [$whole, $fraction] = $parts;
 
         $nanos = (int) \str_pad(\substr($fraction, 0, 9), 9, '0');
 
