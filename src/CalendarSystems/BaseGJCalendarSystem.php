@@ -207,7 +207,12 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
      */
     public function yearsMonthsToDays(int $year, int $month, int $day, int $years, int $months): int
     {
+        $totalMonthsDelta = $years * 12 + $months;
         [$newYear, $newMonth, $newDay] = $this->adjustDate($year + $years, $month + $months, $day);
+
+        if ($newYear === 0) {
+            $newYear = $totalMonthsDelta >= 0 ? 1 : -1;
+        }
 
         return $this->epochDayFromDate($newYear, $newMonth, $newDay) - $this->epochDayFromDate($year, $month, $day);
     }
@@ -223,7 +228,6 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
      */
     private function adjustDate(int $year, int $month, int $day): array
     {
-        $additional = $year >= 0;
         // Handle month overflow (months > 12 or < 1)
         while ($month > 12) {
             $month -= 12;
@@ -233,11 +237,6 @@ abstract class BaseGJCalendarSystem implements CalendarSystem
         while ($month < 1) {
             $month += 12;
             $year--;
-        }
-
-        // Handle era overflow (there is no 0000-00-00)
-        if ($additional && $year < 0) {
-            $day--;
         }
 
         // Adjust days when subtracting more than exists in a month

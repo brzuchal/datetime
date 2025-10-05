@@ -108,6 +108,22 @@ final class LocalDateTest extends TestCase
         self::assertSame(8, $result->day);
     }
 
+    public function testAddMonthsSkipsYearZero(): void
+    {
+        $initial = LocalDate::of(-1, 12, 31);
+        $result = $initial->add(new Duration(months: 2));
+
+        self::assertSame(1, $result->year);
+    }
+
+    public function testAddNegativeMonthsSkipsYearZero(): void
+    {
+        $initial = LocalDate::of(1, 1, 15);
+        $result = $initial->add(new Duration(months: -2));
+
+        self::assertSame(-1, $result->year);
+    }
+
     public function testParse(): void
     {
         $localDate = LocalDate::parse('2023-05-10');
@@ -277,7 +293,7 @@ final class LocalDateTest extends TestCase
 
             // Extreme values
             ['9999-12-31', 0, 1, 1, '10000-02-01'], // Large future test
-            ['0001-01-01', -1, -1, -1, '-0001-11-30'], // Large negative test
+            ['0001-01-01', -1, -1, -1, '-0001-12-01'], // Large negative test
         ];
     }
 }
