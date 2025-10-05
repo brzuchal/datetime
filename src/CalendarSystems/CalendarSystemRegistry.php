@@ -11,16 +11,42 @@ final class CalendarSystemRegistry
     /** @var array<non-empty-string,CalendarSystem> */
     private static array $registry;
 
+    private static bool $initialised = false;
+
     /**
      * Registers a calendar system into the internal registry.
      *
      * @param CalendarSystem $calendar The calendar system to be registered.
      */
-    public static function register(CalendarSystem $calendar): void
+    public static function register(CalendarSystem ...$calendars): void
     {
-        self::$registry ??= self::default();
+        self::ensureInitialised();
 
-        self::$registry[$calendar->name()] = $calendar;
+        foreach ($calendars as $calendar) {
+            self::$registry[$calendar->name()] = $calendar;
+        }
+    }
+
+    /**
+     * Returns all registered calendar systems keyed by their name.
+     *
+     * @return array<non-empty-string,CalendarSystem>
+     */
+    public static function all(): array
+    {
+        self::ensureInitialised();
+
+        return self::$registry;
+    }
+
+    /**
+     * Resets the registry to its default state.
+     * Primarily intended for test isolation.
+     */
+    public static function reset(): void
+    {
+        self::$registry = self::default();
+        self::$initialised = true;
     }
 
     /**
@@ -32,7 +58,7 @@ final class CalendarSystemRegistry
      */
     public static function get(string $name): CalendarSystem
     {
-        self::$registry ??= self::default();
+        self::ensureInitialised();
 
         return self::$registry[$name]
             ?? throw new UnknownCalendarSystem('Unknown calendar system: ' . $name);
@@ -46,7 +72,7 @@ final class CalendarSystemRegistry
      */
     public static function has(string $name): bool
     {
-        self::$registry ??= self::default();
+        self::ensureInitialised();
 
         return isset(self::$registry[$name]);
     }
@@ -58,7 +84,7 @@ final class CalendarSystemRegistry
      */
     public static function names(): array
     {
-        self::$registry ??= self::default();
+        self::ensureInitialised();
 
         return \array_keys(self::$registry);
     }
@@ -74,5 +100,15 @@ final class CalendarSystemRegistry
         $iso = new IsoCalendarSystem();
 
         return [$iso->name() => $iso];
+    }
+
+    private static function ensureInitialised(): void
+    {
+        if (self::$initialised) {
+            return;
+        }
+
+        self::$registry = self::default();
+        self::$initialised = true;
     }
 }
