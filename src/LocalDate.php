@@ -30,6 +30,9 @@ use Brzuchal\DateTime\Temporal\TemporalField;
  */
 final class LocalDate implements TemporalAccessor
 {
+    private const int NANOS_PER_SECOND = 1_000_000_000;
+    private const int NANOS_PER_DAY = 86_400 * self::NANOS_PER_SECOND;
+
     /**
      * @param int          $year  Represents a specific calendar year in the proleptic Gregorian calendar system.
      * @param positive-int $month Represents a month
@@ -264,16 +267,17 @@ final class LocalDate implements TemporalAccessor
      */
     public function add(Duration $duration): self
     {
-        return self::fromEpochDay(
-            $this->epochDay + $duration->days + $this->calendar->yearsMonthsToDays(
+        $daysDelta = $duration->days
+            + $this->calendar->yearsMonthsToDays(
                 year: $this->year,
                 month: $this->month,
                 day: $this->day,
                 years: $duration->years,
                 months: $duration->months,
-            ),
-            $this->calendar,
-        );
+            )
+            + self::timeDays($duration);
+
+        return self::fromEpochDay($this->epochDay + $daysDelta, $this->calendar);
     }
 
     /**
@@ -285,16 +289,17 @@ final class LocalDate implements TemporalAccessor
      */
     public function subtract(Duration $duration): self
     {
-        return self::fromEpochDay(
-            $this->epochDay - $duration->days - $this->calendar->yearsMonthsToDays(
+        $daysDelta = $duration->days
+            + $this->calendar->yearsMonthsToDays(
                 $this->year,
                 $this->month,
                 $this->day,
                 -$duration->years,
                 -$duration->months,
-            ),
-            $this->calendar,
-        );
+            )
+            + self::timeDays($duration);
+
+        return self::fromEpochDay($this->epochDay - $daysDelta, $this->calendar);
     }
 
     // Calculation methods for dates
@@ -407,5 +412,20 @@ final class LocalDate implements TemporalAccessor
         }
 
         return true;
+    }
+
+    private static function timeDays(Duration $duration): int
+    {
+        $totalSeconds = ($duration->hours * 3600)
+            + ($duration->minutes * 60)
+            + $duration->seconds;
+
+        $totalNanos = $totalSeconds * self::NANOS_PER_SECOND + $duration->nanos;
+
+        if ($totalNanos === 0) {
+            return 0;
+        }
+
+        return intdiv($totalNanos, self::NANOS_PER_DAY);
     }
 }

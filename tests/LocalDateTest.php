@@ -78,6 +78,36 @@ final class LocalDateTest extends TestCase
         self::assertSame(30, $result->day);
     }
 
+    public function testAddDurationWithTimeComponents(): void
+    {
+        $initial = LocalDate::of(2023, 5, 10);
+        $result = $initial->add(new Duration(hours: 30));
+
+        self::assertSame(2023, $result->year);
+        self::assertSame(5, $result->month);
+        self::assertSame(11, $result->day);
+    }
+
+    public function testAddDurationWithSubDayTimeComponent(): void
+    {
+        $initial = LocalDate::of(2023, 5, 10);
+        $result = $initial->add(new Duration(hours: 12));
+
+        self::assertSame($initial->year, $result->year);
+        self::assertSame($initial->month, $result->month);
+        self::assertSame($initial->day, $result->day);
+    }
+
+    public function testSubtractDurationWithTimeComponents(): void
+    {
+        $initial = LocalDate::of(2023, 5, 10);
+        $result = $initial->subtract(new Duration(hours: 49));
+
+        self::assertSame(2023, $result->year);
+        self::assertSame(5, $result->month);
+        self::assertSame(8, $result->day);
+    }
+
     public function testParse(): void
     {
         $localDate = LocalDate::parse('2023-05-10');
