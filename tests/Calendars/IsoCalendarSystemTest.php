@@ -46,7 +46,7 @@ final class IsoCalendarSystemTest extends TestCase
     public function testInstantToDate(): void
     {
         $instant = new Instant(0); // 1970-01-01T00:00:00Z
-        $date = $this->calendar->date($instant);
+        $date = $this->calendar->dateFromInstant($instant);
 
         self::assertSame(1970, $date->year);
         self::assertSame(1, $date->month);
@@ -56,7 +56,7 @@ final class IsoCalendarSystemTest extends TestCase
     public function testInstantNegativeEpoch(): void
     {
         $instant = new Instant(-22089899720000000);
-        $date = $this->calendar->date($instant);
+        $date = $this->calendar->dateFromInstant($instant);
 
         self::assertSame(1899, $date->year);
         self::assertSame(12, $date->month);
@@ -66,7 +66,7 @@ final class IsoCalendarSystemTest extends TestCase
     public function testInstantJustBeforeEpoch(): void
     {
         $instant = new Instant(-1);
-        $date = $this->calendar->date($instant);
+        $date = $this->calendar->dateFromInstant($instant);
 
         self::assertSame(1969, $date->year);
         self::assertSame(12, $date->month);

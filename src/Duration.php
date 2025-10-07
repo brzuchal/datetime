@@ -4,6 +4,7 @@ namespace Brzuchal\DateTime;
 
 use Brzuchal\DateTime\Format\DurationFormat;
 use Brzuchal\DateTime\Format\DurationFormatter;
+use Brzuchal\DateTime\Temporal\TimeUnit;
 
 /**
  * Initialises a new instance of the class with the specified time components.
@@ -20,6 +21,7 @@ final readonly class Duration
      * @param int $minutes The number of minutes to initialise. Default is 0.
      * @param int $seconds The number of seconds to initialise. Default is 0.
      * @param int $nanos   The number of nanoseconds to initialise. Default is 0.
+     *
      * @return void
      */
     public function __construct(
@@ -62,6 +64,24 @@ final readonly class Duration
         return $this->format();
     }
 
+    /**
+     * Calculates how many full days are represented by the time components of the duration.
+     */
+    public function toTotalDays(): int
+    {
+        $totalSeconds = ($this->hours * TimeUnit::SECONDS_PER_HOUR)
+            + ($this->minutes * TimeUnit::SECONDS_PER_MINUTE)
+            + $this->seconds;
+
+        $totalNanos = ($totalSeconds * TimeUnit::NANOS_PER_SECOND) + $this->nanos;
+
+        if ($totalNanos === 0) {
+            return 0;
+        }
+
+        return \intdiv($totalNanos, TimeUnit::NANOS_PER_DAY);
+    }
+
     // factories
 
     /**
@@ -79,6 +99,7 @@ final readonly class Duration
      * Creates a new instance by a given number of months.
      *
      * @param int $months The number of months to create the instance with.
+     *
      * @return self A new instance initialised with the specified months.
      */
     public static function months(int $months): self
@@ -90,6 +111,7 @@ final readonly class Duration
      * Creates a new instance by a given number of days.
      *
      * @param int $days The number of days to create the instance with.
+     *
      * @return self A new instance initialised with the specified days.
      */
     public static function days(int $days): self
@@ -101,6 +123,7 @@ final readonly class Duration
      * Creates a new instance by a given number of hours.
      *
      * @param int $hours The number of hours to create the instance with.
+     *
      * @return self A new instance initialised with the specified hours.
      */
     public static function hours(int $hours): self
@@ -112,6 +135,7 @@ final readonly class Duration
      * Creates a new instance by a given number of minutes.
      *
      * @param int $minutes The number of minutes to create the instance with.
+     *
      * @return self A new instance initialised with the specified minutes.
      */
     public static function minutes(int $minutes): self
@@ -123,6 +147,7 @@ final readonly class Duration
      * Creates an instance with the specified number of seconds.
      *
      * @param int $seconds The number of seconds to set.
+     *
      * @return self An instance with the given seconds.
      */
     public static function seconds(int $seconds): self
@@ -134,6 +159,7 @@ final readonly class Duration
      * Creates an instance with the specified number of nanoseconds.
      *
      * @param int $nanos The number of nanoseconds to set.
+     *
      * @return self An instance with the given nanoseconds.
      */
     public static function nanos(int $nanos): self
@@ -153,6 +179,7 @@ final readonly class Duration
      * @param int $minutes The number of minutes to add.
      * @param int $seconds The number of seconds to add.
      * @param int $nanos   The number of nanoseconds to add.
+     *
      * @return self A new instance with the updated values.
      */
     public function plus(int $years = 0, int $months = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self
@@ -178,6 +205,7 @@ final readonly class Duration
      * @param int $minutes The number of minutes to subtract.
      * @param int $seconds The number of seconds to subtract.
      * @param int $nanos   The number of nanoseconds to subtract.
+     *
      * @return self A new instance with the adjusted time values.
      */
     public function minus(int $years = 0, int $months = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self

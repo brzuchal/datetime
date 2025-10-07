@@ -94,7 +94,7 @@ final class IsoCalendarSystem extends BaseGJCalendarSystem
      *
      * @throws InvalidDate On an invalid date.
      */
-    public function date(Instant $instant): LocalDate
+    public function dateFromInstant(Instant $instant): LocalDate
     {
         return LocalDate::fromEpochDay($instant->epochDay, $this);
     }

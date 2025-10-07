@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- **API additions**
+  - Introduce LocalTime value object with validation, arithmetic helpers, and TemporalAccessor integration.
+  - Add InvalidTime exception for clearer range violations.
+  - Add LocalDateTime aggregate covering combined date/time arithmetic, Instant conversion, and TemporalAccessor support.
 - **Security**
   - Harden `LocalDate::__unserialize()` to validate payload structure, numeric fields, and calendar membership before instantiation.
   - Add regression tests covering malicious serialized input to prevent assertion bypasses and fatal errors.
@@ -21,3 +25,7 @@
   - Add CalendarSystemRegistry::all(), variadic register(), and reset() helpers for better discovery and test isolation.
 - **Dependency clean-up**
   - Remove unused ext-gmp requirement from composer metadata and docs.
+- **Temporal units**
+  - Centralise nano/second/minute/hour/day constants in `TimeUnit` and reuse across LocalTime, LocalDateTime, and Duration.
+  - Expose `Duration::toTotalDays()` and reuse it in LocalDate to route time-derived day spillover.
+  - Normalize docblock code snippets to `<code>` blocks for IDE-friendly tooltips.

@@ -83,7 +83,7 @@ final class LocalDateTest extends TestCase
     public function testAddDurationWithTimeComponents(): void
     {
         $initial = LocalDate::of(2023, 5, 10);
-        $result = $initial->add(new Duration(hours: 30));
+        $result = $initial->plusDuration(new Duration(hours: 30));
 
         self::assertSame(2023, $result->year);
         self::assertSame(5, $result->month);
@@ -93,7 +93,7 @@ final class LocalDateTest extends TestCase
     public function testAddDurationWithSubDayTimeComponent(): void
     {
         $initial = LocalDate::of(2023, 5, 10);
-        $result = $initial->add(new Duration(hours: 12));
+        $result = $initial->plusDuration(new Duration(hours: 12));
 
         self::assertSame($initial->year, $result->year);
         self::assertSame($initial->month, $result->month);
@@ -103,7 +103,7 @@ final class LocalDateTest extends TestCase
     public function testSubtractDurationWithTimeComponents(): void
     {
         $initial = LocalDate::of(2023, 5, 10);
-        $result = $initial->subtract(new Duration(hours: 49));
+        $result = $initial->minusDuration(new Duration(hours: 49));
 
         self::assertSame(2023, $result->year);
         self::assertSame(5, $result->month);
@@ -113,7 +113,7 @@ final class LocalDateTest extends TestCase
     public function testAddMonthsSkipsYearZero(): void
     {
         $initial = LocalDate::of(-1, 12, 31);
-        $result = $initial->add(new Duration(months: 2));
+        $result = $initial->plusDuration(new Duration(months: 2));
 
         self::assertSame(1, $result->year);
     }
@@ -121,7 +121,7 @@ final class LocalDateTest extends TestCase
     public function testAddNegativeMonthsSkipsYearZero(): void
     {
         $initial = LocalDate::of(1, 1, 15);
-        $result = $initial->add(new Duration(months: -2));
+        $result = $initial->plusDuration(new Duration(months: -2));
 
         self::assertSame(-1, $result->year);
     }
@@ -314,7 +314,7 @@ final class LocalDateTest extends TestCase
         }
 
         $date = LocalDate::parse($startDate);
-        $result = $date->add(new Duration($years, $months, $days));
+        $result = $date->plusDuration(new Duration($years, $months, $days));
 
         self::assertSame((int) $expectedYear, $result->year);
         self::assertSame((int) $expectedMonth, $result->month);
