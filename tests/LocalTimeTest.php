@@ -152,7 +152,7 @@ final class LocalTimeTest extends TestCase
 
         self::assertSame(-1, $earlier->compareTo($later));
         self::assertSame(1, $later->compareTo($earlier));
-        self::assertTrue($earlier->equals(LocalTime::of(6, 30)));
+        self::assertTrue($earlier->equalTo(LocalTime::of(6, 30)));
     }
 
     public function testToNanoOfDayAndSecondsAreConsistent(): void

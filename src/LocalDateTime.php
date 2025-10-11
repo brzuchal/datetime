@@ -285,7 +285,7 @@ final class LocalDateTime implements TemporalAccessor
             $resolvedNano,
         );
 
-        if ($time->equals($this->time)) {
+        if ($time->equalTo($this->time)) {
             return $this;
         }
 
@@ -545,12 +545,10 @@ final class LocalDateTime implements TemporalAccessor
      *
      * @return bool True if both date and time components are equal.
      */
-    public function equals(self $other): bool
+    public function equalTo(self $other): bool
     {
-        return $this->date->year === $other->date->year
-            && $this->date->month === $other->date->month
-            && $this->date->day === $other->date->day
-            && $this->time->equals($other->time);
+        return $this->date->equalTo($other->date)
+            && $this->time->equalTo($other->time);
     }
 
     /**

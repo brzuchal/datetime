@@ -7,4 +7,8 @@ enum DateTimeFormat: string
     case IsoLocalDate = 'Y-m-d';
     case ExtendedIsoLocalDate = 'u-m-d';
     case IsoLocalTime = 'H:i:s';
+    case IsoBasicLocalDate = 'Ymd';
+    case IsoBasicLocalTime = 'His';
+    case IsoLocalDateTime = 'Y-m-d\\TH:i:s';
+    case IsoBasicLocalDateTime = 'Ymd\\THis';
 }

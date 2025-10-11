@@ -23,13 +23,30 @@ final readonly class DateTimeFormatter
      */
     public static function fromPattern(string $pattern): self
     {
-        $normalizedPattern = \preg_replace('/[\s\-,]/', '', $pattern);
-        if ($normalizedPattern === null || $normalizedPattern === '') {
-            throw new InvalidPattern('Pattern cannot be empty');
+        $length = \strlen($pattern);
+        $hasToken = false;
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $pattern[$i];
+
+            if ($char === '\\') {
+                $i++;
+                continue;
+            }
+
+            if ($char === ' ' || $char === '-' || $char === ',' || $char === ':') {
+                continue;
+            }
+
+            if (! \in_array($char, ['y', 'Y', 'u', 'm', 'd', 'H', 'h', 'i', 's', 'a'], true)) {
+                throw new UnsupportedPatternSymbol('Pattern contains unsupported symbols or invalid characters');
+            }
+
+            $hasToken = true;
         }
 
-        if (! \preg_match('/^[yYumdHisah]+$/', $normalizedPattern)) {
-            throw new UnsupportedPatternSymbol('Pattern contains unsupported symbols or invalid characters');
+        if (! $hasToken) {
+            throw new InvalidPattern('Pattern cannot be empty');
         }
 
         return new self($pattern);
@@ -79,38 +96,72 @@ final readonly class DateTimeFormatter
 
     public function format(TemporalAccessor $accessor): string
     {
+        $result = '';
+        $length = \strlen($this->pattern);
         $year = $accessor->get(TemporalField::Year) ?? 0;
 
-        return \strtr($this->pattern, [
-            'y' => \sprintf('%02d', $year % 100),
-            'Y' => \sprintf('%04d', $year),
-            'u' => $year >= 10000 || $year < 0
-                ? \sprintf('%+d', $year)
-                : \sprintf('%04d', $year),
-            'm' => \sprintf('%02d', $accessor->get(TemporalField::Month) ?? 0),
-            'd' => \sprintf('%02d', $accessor->get(TemporalField::Day) ?? 0),
-            'H' => \sprintf('%02d', $accessor->get(TemporalField::Hour) ?? 0),
-            'h' => \sprintf('%02d', ($accessor->get(TemporalField::Hour) ?? 0) % 12 ?: 12),
-            'i' => \sprintf('%02d', $accessor->get(TemporalField::Minute) ?? 0),
-            's' => \sprintf('%02d', $accessor->get(TemporalField::Second) ?? 0),
-            'a' => ($accessor->get(TemporalField::Hour) ?? 0) >= 12 ? 'PM' : 'AM',
-        ]);
+        for ($i = 0; $i < $length; $i++) {
+            $char = $this->pattern[$i];
+
+            if ($char === '\\') {
+                $i++;
+                $result .= $i < $length ? $this->pattern[$i] : '\\';
+
+                continue;
+            }
+
+            $result .= match ($char) {
+                'y' => \sprintf('%02d', $year % 100),
+                'Y' => \sprintf('%04d', $year),
+                'u' => $year >= 10000 || $year < 0
+                    ? \sprintf('%+d', $year)
+                    : \sprintf('%04d', $year),
+                'm' => \sprintf('%02d', $accessor->get(TemporalField::Month) ?? 0),
+                'd' => \sprintf('%02d', $accessor->get(TemporalField::Day) ?? 0),
+                'H' => \sprintf('%02d', $accessor->get(TemporalField::Hour) ?? 0),
+                'h' => \sprintf('%02d', ($accessor->get(TemporalField::Hour) ?? 0) % 12 ?: 12),
+                'i' => \sprintf('%02d', $accessor->get(TemporalField::Minute) ?? 0),
+                's' => \sprintf('%02d', $accessor->get(TemporalField::Second) ?? 0),
+                'a' => ($accessor->get(TemporalField::Hour) ?? 0) >= 12 ? 'PM' : 'AM',
+                default => $char,
+            };
+        }
+
+        return $result;
     }
 
     private function patternToRegex(string $pattern): string
     {
-        $regex = \strtr(\preg_quote($pattern, '/'), [
-            'y' => '(?P<year2>\d{2})',                   // two-digit year
-            'Y' => '(?P<year4>\d{4})',                   // 4-digit year
-            'u' => '(?P<year_full>[+-]?\d{4,})',         // full ISO 8601 year with sign
-            'm' => '(?P<month>\d{2})',
-            'd' => '(?P<day>\d{2})',
-            'H' => '(?P<hour24>\d{2})',
-            'h' => '(?P<hour12>\d{2})',
-            'i' => '(?P<minute>\d{2})',
-            's' => '(?P<second>\d{2})',
-            'a' => '(?P<ampm>AM|PM|am|pm)',
-        ]);
+        $regex = '';
+        $length = \strlen($pattern);
+        for ($i = 0; $i < $length; $i++) {
+            $char = $pattern[$i];
+
+            if ($char === '\\') {
+                $i++;
+                if ($i < $length) {
+                    $regex .= \preg_quote($pattern[$i], '/');
+                } else {
+                    $regex .= '\\\\';
+                }
+
+                continue;
+            }
+
+            $regex .= match ($char) {
+                'y' => '(?P<year2>\\d{2})',
+                'Y' => '(?P<year4>\\d{4})',
+                'u' => '(?P<year_full>[+-]?\\d{4,})',
+                'm' => '(?P<month>\\d{2})',
+                'd' => '(?P<day>\\d{2})',
+                'H' => '(?P<hour24>\\d{2})',
+                'h' => '(?P<hour12>\\d{2})',
+                'i' => '(?P<minute>\\d{2})',
+                's' => '(?P<second>\\d{2})',
+                'a' => '(?P<ampm>AM|PM|am|pm)',
+                default => \preg_quote($char, '/'),
+            };
+        }
 
         return '/^' . $regex . '$/';
     }

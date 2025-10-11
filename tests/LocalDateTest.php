@@ -413,4 +413,22 @@ final class LocalDateTest extends TestCase
 
         $date->__unserialize(['value' => '2024-13-15']);
     }
+
+    public function testCompareToOrdersByEpochDay(): void
+    {
+        $first = LocalDate::of(2024, 7, 14);
+        $second = LocalDate::of(2024, 7, 15);
+
+        self::assertSame(-1, $first->compareTo($second));
+        self::assertSame(1, $second->compareTo($first));
+        self::assertSame(0, $first->compareTo(LocalDate::of(2024, 7, 14)));
+    }
+
+    public function testEqualToChecksIsoComponents(): void
+    {
+        $first = LocalDate::of(2024, 7, 14);
+
+        self::assertTrue($first->equalTo(LocalDate::of(2024, 7, 14)));
+        self::assertFalse($first->equalTo(LocalDate::of(2024, 7, 15)));
+    }
 }

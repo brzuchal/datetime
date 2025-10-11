@@ -122,14 +122,14 @@ final class LocalDateTimeTest extends TestCase
         self::assertSame(1, $dateTime->get(TemporalField::AmPm));
     }
 
-    public function testCompareToAndEquals(): void
+    public function testCompareToAndEqualTo(): void
     {
         $first = LocalDateTime::of(2020, 5, 10, 9);
         $second = LocalDateTime::of(2020, 5, 10, 10);
 
         self::assertSame(-1, $first->compareTo($second));
         self::assertSame(1, $second->compareTo($first));
-        self::assertTrue($first->equals(LocalDateTime::of(2020, 5, 10, 9)));
+        self::assertTrue($first->equalTo(LocalDateTime::of(2020, 5, 10, 9)));
     }
 
     public function testPlusConvenienceMethods(): void

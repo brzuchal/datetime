@@ -274,6 +274,26 @@ final class LocalDate implements TemporalAccessor
         ));
     }
 
+    /**
+     * Compares this date with another date.
+     *
+     * @return int<-1, 1> Returns -1 if this date is before the other date, 0 if they are equal, and 1 if this date is after the other date.
+     */
+    public function compareTo(self $other): int
+    {
+        return $this->epochDay <=> $other->epochDay;
+    }
+
+    /**
+     * Checks if this date has the same ISO components as another date.
+     */
+    public function equalTo(self $other): bool
+    {
+        return $this->year === $other->year
+            && $this->month === $other->month
+            && $this->day === $other->day;
+    }
+
     // Calculation methods for dates
 
     /**

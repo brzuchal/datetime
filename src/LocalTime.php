@@ -289,7 +289,7 @@ final readonly class LocalTime implements TemporalAccessor
      *
      * @return bool True if both times have identical hour, minute, second and nano values.
      */
-    public function equals(self $other): bool
+    public function equalTo(self $other): bool
     {
         return $this->hour === $other->hour
             && $this->minute === $other->minute
