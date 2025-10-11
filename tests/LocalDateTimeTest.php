@@ -106,7 +106,7 @@ final class LocalDateTimeTest extends TestCase
         $dateTime = LocalDateTime::of(2020, 1, 1, 1, 1, 1, 1);
 
         $this->expectException(InvalidTime::class);
-        $dateTime->withTimeComponents(hour: 24);
+        $dateTime->with(hour: 24);
     }
 
     public function testTemporalAccessorFields(): void
@@ -152,10 +152,10 @@ final class LocalDateTimeTest extends TestCase
     {
         $dateTime = LocalDateTime::of(1985, 10, 25, 1, 20, 0, 123);
 
-        $adjusted = $dateTime->withTimeComponents(hour: 10, minute: 4, nano: 456);
+        $adjusted = $dateTime->with(hour: 10, minute: 4, nano: 456);
         self::assertSame('1985-10-25T10:04:00.000000456', (string) $adjusted);
 
-        self::assertSame($dateTime, $dateTime->withTimeComponents());
+        self::assertSame($dateTime, $dateTime->with());
         self::assertSame($dateTime, $dateTime->withTime($dateTime->time));
         self::assertSame($dateTime, $dateTime->withDate($dateTime->date));
     }
@@ -166,9 +166,7 @@ final class LocalDateTimeTest extends TestCase
 
         self::assertSame(
             [
-                'date' => '2021-06-07',
-                'calendar' => 'ISO',
-                'time' => '08:09:10.123456789',
+                'value' => '2021-06-07T08:09:10.123456789',
             ],
             $dateTime->__serialize(),
         );
@@ -177,6 +175,5 @@ final class LocalDateTimeTest extends TestCase
 
         self::assertInstanceOf(LocalDateTime::class, $roundTripped);
         self::assertSame((string) $dateTime, (string) $roundTripped);
-        self::assertSame($dateTime->calendar->name(), $roundTripped->calendar->name());
     }
 }

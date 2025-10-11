@@ -2,9 +2,6 @@
 
 namespace Brzuchal\DateTime;
 
-use Brzuchal\DateTime\CalendarSystems\CalendarSystem;
-use Brzuchal\DateTime\CalendarSystems\CalendarSystemRegistry;
-use Brzuchal\DateTime\CalendarSystems\IsoCalendarSystem;
 use Brzuchal\DateTime\Temporal\TemporalAccessor;
 use Brzuchal\DateTime\Temporal\TemporalField;
 use Brzuchal\DateTime\Temporal\TimeUnit;
@@ -23,134 +20,123 @@ use Brzuchal\DateTime\Temporal\TimeUnit;
  */
 final class LocalDateTime implements TemporalAccessor
 {
+    public int $year { get => $this->date->year; }
 
-    public CalendarSystem $calendar {
-        get => $this->date->calendar;
-    }
+    /** @var int<1, 12> */
+    public int $month { get => $this->date->month; }
 
-    public int $year {
-        get => $this->date->year;
-    }
+    /** @var int<1, 31> */
+    public int $day { get => $this->date->day; }
 
-    /**
-     * @return int<1, 12>
-     */
-    public int $month {
-        get => $this->date->month;
-    }
+    /** @var int<0, 23> */
+    public int $hour { get => $this->time->hour; }
 
-    /**
-     * @return int<1, 31>
-     */
-    public int $day {
-        get => $this->date->day;
-    }
+    /** @var int<0, 59> */
+    public int $minute { get => $this->time->minute; }
 
-    /**
-     * @return int<0, 23>
-     */
-    public int $hour {
-        get => $this->time->hour;
-    }
+    /** @var int<0, 59> */
+    public int $second { get => $this->time->second; }
 
-    /**
-     * @return int<0, 59>
-     */
-    public int $minute {
-        get => $this->time->minute;
-    }
-
-    /**
-     * @return int<0, 59>
-     */
-    public int $second {
-        get => $this->time->second;
-    }
-
-    /**
-     * @return int<0, 999999999>
-     */
-    public int $nano {
-        get => $this->time->nano;
-    }
+    /** @var int<0, 999999999> */
+    public int $nano { get => $this->time->nano; }
 
     private function __construct(public readonly LocalDate $date, public readonly LocalTime $time)
     {
     }
 
     /**
-     * @return array{date: non-empty-string, calendar: non-empty-string, time: non-empty-string}
+     * @return array{value: non-empty-string}
      */
     public function __serialize(): array
     {
-        $datePayload = $this->date->__serialize();
-        \assert($datePayload['date'] !== '');
-        \assert($datePayload['calendar'] !== '');
+        $value = (string) $this;
+        assert($value !== '');
 
-        $time = (string) $this->time;
-        \assert($time !== '');
-
-        return [
-            'date' => $datePayload['date'],
-            'calendar' => $datePayload['calendar'],
-            'time' => $time,
-        ];
+        return ['value' => $value];
     }
 
     /**
      * @param array<string,mixed> $data
+     *
+     * @throws InvalidDate
+     * @throws InvalidTime
      */
     public function __unserialize(array $data): void
     {
-        if (! isset($data['date'], $data['calendar'], $data['time'])) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s payload missing required keys.', self::class));
+        if (! isset($data['value'])) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s payload missing required key.', self::class));
         }
 
-        if (! \is_string($data['date']) || $data['date'] === '') {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s date must be a non-empty string.', self::class));
+        if (! \is_string($data['value']) || $data['value'] === '') {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s value must be a non-empty string.', self::class));
         }
 
-        if (! \is_string($data['calendar']) || $data['calendar'] === '') {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s calendar must be a non-empty string.', self::class));
+        $dateTimeParts = \explode('T', $data['value'], 2);
+        if (! isset($dateTimeParts[1]) || $dateTimeParts[0] === '' || $dateTimeParts[1] === '') {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s value must contain date and time separated by "T".', self::class));
         }
 
-        if (! \is_string($data['time']) || $data['time'] === '') {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s time must be a non-empty string.', self::class));
-        }
-
-        $calendar = CalendarSystemRegistry::get($data['calendar']);
+        [$datePayload, $timePayload] = $dateTimeParts;
 
         $length = 0;
-        $parsed = \sscanf($data['date'], LocalDate::SERIALIZED_DATE_FORMAT . '%n', $yearValue, $monthValue, $dayValue, $length);
-        if ($parsed < 3 || $length !== \strlen($data['date'])) {
+        $dateValuesCount = \sscanf($datePayload, LocalDate::SERIALIZED_DATE_FORMAT . '%n', $yearValue, $monthValue, $dayValue, $length);
+        assert(\is_int($yearValue));
+        assert(\is_int($monthValue));
+        assert(\is_int($dayValue));
+        if ($dateValuesCount < 3 || $length !== \strlen($datePayload)) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s date is malformed.', self::class));
         }
 
-        if ($monthValue <= 0) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s month must be a positive integer.', self::class));
-        }
-
-        if ($dayValue <= 0) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s day must be a positive integer.', self::class));
-        }
-
-        if ($data['date'] !== \sprintf(LocalDate::SERIALIZED_DATE_FORMAT, $yearValue, $monthValue, $dayValue)) {
+        if ($datePayload !== \sprintf(LocalDate::SERIALIZED_DATE_FORMAT, $yearValue, $monthValue, $dayValue)) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s date contains invalid numeric components.', self::class));
         }
 
-        if (! $calendar->isValidDate($yearValue, $monthValue, $dayValue)) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s contains a date invalid for the provided calendar system.', self::class));
+        /** @phpstan-ignore-next-line staticMethod.alreadyNarrowedType reason: runtime validation must guard user-provided values */
+        $date = LocalDate::of($yearValue, $monthValue, $dayValue);
+
+        $timeParts = \explode('.', $timePayload, 2);
+        $timeBase = $timeParts[0];
+        $secondFraction = $timeParts[1] ?? '';
+        if ($timeBase === '') {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s time is malformed.', self::class));
         }
 
-        $timeComponents = self::parseSerializedTime($data['time']);
+        $timeValuesCount = \sscanf($timeBase, LocalTime::SERIALIZED_TIME_FORMAT . '%n', $hourValue, $minuteValue, $secondValue, $length);
+        if ($timeValuesCount < 3) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s time is malformed.', self::class));
+        }
 
-        $date = LocalDate::of($yearValue, $monthValue, $dayValue, $calendar);
-        $time = LocalTime::of(
-            $timeComponents['hour'],
-            $timeComponents['minute'],
-            $timeComponents['second'],
-            $timeComponents['nano'],
-        );
+        if ($timeBase !== \sprintf(LocalTime::SERIALIZED_TIME_FORMAT, $hourValue, $minuteValue, $secondValue)) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s time contains invalid numeric components.', self::class));
+        }
+
+        if (! \is_int($hourValue) || $hourValue < 0 || $hourValue > 23) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s hour is out of range.', self::class));
+        }
+
+        if (! \is_int($minuteValue) || $minuteValue < 0 || $minuteValue > 59) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s minute is out of range.', self::class));
+        }
+
+        if (! \is_int($secondValue) || $secondValue < 0 || $secondValue > 59) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s second is out of range.', self::class));
+        }
+
+        if ($secondFraction !== '') {
+            if (!\ctype_digit($secondFraction) || \strlen($secondFraction) > 9) {
+                throw new \UnexpectedValueException(\sprintf('Serialized %s fractional seconds are malformed.', self::class));
+            }
+
+            $nano = (int) ($secondFraction . \str_repeat('0', 9 - \strlen($secondFraction)));
+        } else {
+            $nano = 0;
+        }
+
+        if ($nano < 0 || $nano > 999_999_999) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s nanosecond is out of range.', self::class));
+        }
+
+        $time = LocalTime::of($hourValue, $minuteValue, $secondValue, $nano);
 
         self::__construct($date, $time);
     }
@@ -161,11 +147,6 @@ final class LocalDateTime implements TemporalAccessor
      * Basic example:
      * <code>
      * $dt = LocalDateTime::of(2025, 3, 17, 14, 30); // 2025-03-17T14:30:00
-     * </code>
-     *
-     * With a custom calendar system:
-     * <code>
-     * $dt = LocalDateTime::of(2025, 3, 17, 0, 0, 0, 0, new IsoCalendarSystem());
      * </code>
      *
      * @param int<1, 12> $month
@@ -186,9 +167,8 @@ final class LocalDateTime implements TemporalAccessor
         int $minute = 0,
         int $second = 0,
         int $nano = 0,
-        CalendarSystem $calendarSystem = new IsoCalendarSystem(),
     ): self {
-        $date = LocalDate::of($year, $month, $day, $calendarSystem);
+        $date = LocalDate::of($year, $month, $day);
         $time = LocalTime::of($hour, $minute, $second, $nano);
 
         return new self($date, $time);
@@ -208,24 +188,18 @@ final class LocalDateTime implements TemporalAccessor
     }
 
     /**
-     * Creates a LocalDateTime from an Instant in the given calendar system.
+     * Creates a LocalDateTime from an {@see Instant} using the ISO-8601 calendar system.
      *
-     * @param Instant $instant        The instant to convert.
-     * @param CalendarSystem $calendarSystem Target calendar system (defaults to ISO).
-     *
-     * @return self LocalDateTime representing the instant in the specified calendar system.
-     *
-     * @throws InvalidDate If the date component is out of range.
      * @throws InvalidTime If the time component is out of range.
      */
-    public static function ofInstant(Instant $instant, CalendarSystem $calendarSystem = new IsoCalendarSystem()): self
+    public static function ofInstant(Instant $instant): self
     {
         $epochDay = $instant->epochDay;
         $secondOfDay = self::floorMod($instant->epochSecond, TimeUnit::SECONDS_PER_DAY);
         $nanoOfDay = $secondOfDay * TimeUnit::NANOS_PER_SECOND + $instant->nanoAdjustment;
         \assert($nanoOfDay >= 0 && $nanoOfDay < TimeUnit::NANOS_PER_DAY);
 
-        $date = LocalDate::fromEpochDay($epochDay, $calendarSystem);
+        $date = LocalDate::fromEpochDay($epochDay);
         $time = LocalTime::ofNanoOfDay($nanoOfDay);
 
         return new self($date, $time);
@@ -268,22 +242,47 @@ final class LocalDateTime implements TemporalAccessor
      *
      * Any parameter set to null will keep the current value. Values are validated against allowed ranges.
      *
-     * @param int<0, 23>|null $hour   Hour of the day.
-     * @param int<0, 59>|null $minute Minute of hour.
-     * @param int<0, 59>|null $second Second of minute.
-     * @param int<0, 999999999>|null $nano   Nanosecond of second.
+     * @param int|null $hour   Hour of the day.
+     * @param int|null $minute Minute of hour.
+     * @param int|null $second Second of minute.
+     * @param int|null $nano   Nanosecond of second.
      *
      * @return self A new LocalDateTime with updated time, or this instance if unchanged.
      *
      * @throws InvalidTime If the value is out of range.
      */
-    public function withTimeComponents(int|null $hour = null, int|null $minute = null, int|null $second = null, int|null $nano = null): self
+    public function with(int|null $hour = null, int|null $minute = null, int|null $second = null, int|null $nano = null): self
     {
+        if ($hour === null && $minute === null && $second === null && $nano === null) {
+            return $this;
+        }
+
+        if ($hour !== null && ($hour < 0 || $hour > 23)) {
+            throw new InvalidTime(\sprintf('Hour is out of range: %d', $hour));
+        }
+
+        if ($minute !== null && ($minute < 0 || $minute > 59)) {
+            throw new InvalidTime(\sprintf('Minute is out of range: %d', $minute));
+        }
+
+        if ($second !== null && ($second < 0 || $second > 59)) {
+            throw new InvalidTime(\sprintf('Second is out of range: %d', $second));
+        }
+
+        if ($nano !== null && ($nano < 0 || $nano > 999_999_999)) {
+            throw new InvalidTime(\sprintf('Nanosecond is out of range: %d', $nano));
+        }
+
+        $resolvedHour = $hour ?? $this->hour;
+        $resolvedMinute = $minute ?? $this->minute;
+        $resolvedSecond = $second ?? $this->second;
+        $resolvedNano = $nano ?? $this->nano;
+
         $time = LocalTime::of(
-            $hour ?? $this->hour,
-            $minute ?? $this->minute,
-            $second ?? $this->second,
-            $nano ?? $this->nano,
+            $resolvedHour,
+            $resolvedMinute,
+            $resolvedSecond,
+            $resolvedNano,
         );
 
         if ($time->equals($this->time)) {
@@ -303,7 +302,6 @@ final class LocalDateTime implements TemporalAccessor
      *
      * @return self A new LocalDateTime with the adjustment applied, or this instance if the duration is zero.
      *
-     * @throws InvalidDate If the date component is out of range.
      * @throws InvalidTime If the time component is out of range.
      */
     public function plus(Duration $duration): self
@@ -352,7 +350,6 @@ final class LocalDateTime implements TemporalAccessor
      *
      * @return self A new LocalDateTime with the adjustment applied, or this instance if the duration is zero.
      *
-     * @throws InvalidDate If the date component is out of range.
      * @throws InvalidTime If the time component is out of range.
      */
     public function minus(Duration $duration): self
@@ -384,9 +381,8 @@ final class LocalDateTime implements TemporalAccessor
      * Returns a copy of this LocalDateTime with the specified number of years added to the date component.
      *
      * @param int $years Years to add (can be negative).
-     * @return self A new LocalDateTime with the adjusted date, or this instance if zero.
      *
-     * @throws InvalidDate If the date component is out of range.
+     * @return self A new LocalDateTime with the adjusted date, or this instance if zero.
      */
     public function plusYears(int $years): self
     {
@@ -401,9 +397,8 @@ final class LocalDateTime implements TemporalAccessor
      * Returns a copy of this LocalDateTime with the specified number of months added to the date component.
      *
      * @param int $months Months to add (can be negative).
-     * @return self A new LocalDateTime with the adjusted date, or this instance if zero.
      *
-     * @throws InvalidDate If the date component is out of range.
+     * @return self A new LocalDateTime with the adjusted date, or this instance if zero.
      */
     public function plusMonths(int $months): self
     {
@@ -420,8 +415,6 @@ final class LocalDateTime implements TemporalAccessor
      * @param int $days Days to add (can be negative).
      *
      * @return self A new LocalDateTime with the adjusted date, or this instance if zero.
-     *
-     * @throws InvalidDate If the date component is out of range.
      */
     public function plusDays(int $days): self
     {
@@ -439,7 +432,6 @@ final class LocalDateTime implements TemporalAccessor
      *
      * @return self A new LocalDateTime with the adjustment applied, or this instance if zero.
      *
-     * @throws InvalidDate If the date component is out of range.
      * @throws InvalidTime If the time component is out of range.
      */
     public function plusHours(int $hours): self
@@ -458,7 +450,6 @@ final class LocalDateTime implements TemporalAccessor
      *
      * @return self A new LocalDateTime with the adjustment applied, or this instance if zero.
      *
-     * @throws InvalidDate If the date component is out of range.
      * @throws InvalidTime If the time component is out of range.
      */
     public function plusMinutes(int $minutes): self
@@ -477,7 +468,6 @@ final class LocalDateTime implements TemporalAccessor
      *
      * @return self A new LocalDateTime with the adjustment applied, or this instance if zero.
      *
-     * @throws InvalidDate If the date component is out of range.
      * @throws InvalidTime If the time component is out of range.
      */
     public function plusSeconds(int $seconds): self
@@ -496,7 +486,6 @@ final class LocalDateTime implements TemporalAccessor
      *
      * @return self A new LocalDateTime with the adjustment applied, or this instance if zero.
      *
-     * @throws InvalidDate If the date component is out of range.
      * @throws InvalidTime If the time component is out of range.
      */
     public function plusNanos(int $nanos): self
@@ -571,7 +560,7 @@ final class LocalDateTime implements TemporalAccessor
      */
     public function __toString(): string
     {
-        return (string) $this->date . 'T' . (string) $this->time;
+        return $this->date . 'T' . $this->time;
     }
 
     /**
@@ -601,34 +590,24 @@ final class LocalDateTime implements TemporalAccessor
             return $this->time->get($field);
         }
 
-        switch ($field) {
-            case TemporalField::WeekOfYear:
-                return $this->date->weekOfYear;
-
-            case TemporalField::WeekOfMonth:
-                return $this->date->weekOfMonth;
-
-            case TemporalField::Era:
-                return $this->date->era->ordinal;
-
-            case TemporalField::Year:
-                return $this->year;
-
-            case TemporalField::Month:
-                return $this->month;
-
-            case TemporalField::Day:
-                return $this->day;
-
-            case TemporalField::DayOfYear:
-                return $this->date->dayOfYear;
-
-            case TemporalField::DayOfWeek:
-                return $this->date->dayOfWeek;
-
-            default:
-                return null;
+        if (
+            \in_array(
+                $field,
+                [
+                    TemporalField::Era,
+                    TemporalField::Year,
+                    TemporalField::Month,
+                    TemporalField::Day,
+                    TemporalField::DayOfYear,
+                    TemporalField::DayOfWeek,
+                    TemporalField::WeekOfYear,
+                ],
+            )
+        ) {
+            return $this->date->get($field);
         }
+
+        return null;
     }
 
     /**
@@ -675,57 +654,6 @@ final class LocalDateTime implements TemporalAccessor
             + $duration->nanos;
     }
 
-    /**
-     * @return array{hour:int<0,23>,minute:int<0,59>,second:int<0,59>,nano:int<0,999999999>}
-     */
-    private static function parseSerializedTime(string $time): array
-    {
-        $parts = \explode('.', $time, 2);
-        $base = $parts[0];
-        $fraction = $parts[1] ?? '';
-
-        $scan = \sscanf($base, LocalTime::SERIALIZED_TIME_FORMAT);
-        if ($scan === null || \count($scan) !== 3) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s time is malformed.', self::class));
-        }
-
-        [$hour, $minute, $second] = $scan;
-
-        if ($base !== \sprintf(LocalTime::SERIALIZED_TIME_FORMAT, $hour, $minute, $second)) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s time contains invalid numeric components.', self::class));
-        }
-
-        if ($fraction !== '') {
-            if (! \ctype_digit($fraction) || \strlen($fraction) > 9) {
-                throw new \UnexpectedValueException(\sprintf('Serialized %s fractional seconds are malformed.', self::class));
-            }
-
-            $nano = (int) ($fraction . \str_repeat('0', 9 - \strlen($fraction)));
-        } else {
-            $nano = 0;
-        }
-
-        if (
-            $hour > 23
-            || $minute > 59
-            || $second > 59
-            || $nano > TimeUnit::NANOS_PER_SECOND - 1
-        ) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s time contains out-of-range values.', self::class));
-        }
-
-        return [
-            'hour' => $hour,
-            'minute' => $minute,
-            'second' => $second,
-            'nano' => $nano,
-        ];
-    }
-
-    /**
-     * @param int $nanoseconds
-     * @return int
-     */
     private static function dayOverflowFromNanos(int $nanoseconds): int
     {
         $quotient = \intdiv($nanoseconds, TimeUnit::NANOS_PER_DAY);

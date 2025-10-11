@@ -10,23 +10,19 @@ final readonly class DateTimeFormatter
     private function __construct(private string $pattern)
     {}
 
+    public static function of(DateTimeFormat $format): self
+    {
+        return new self($format->value);
+    }
+
     /**
-     * Creates an instance based on the provided date-time format pattern.
-     *
-     * @param DateTimeFormat|string $pattern A date-time format instance or a format pattern string.
-     *                                        The pattern string must not be empty or contain unsupported symbols.
-     *
-     * @return self Returns a new instance with the provided pattern.
+     * @param non-empty-string $pattern The pattern to use for formatting and parsing.
      *
      * @throws InvalidPattern If the provided pattern is empty or null.
      * @throws UnsupportedPatternSymbol If the pattern contains unsupported symbols or invalid characters.
      */
-    public static function of(DateTimeFormat|string $pattern): self
+    public static function fromPattern(string $pattern): self
     {
-        if ($pattern instanceof DateTimeFormat) {
-            return new self($pattern->value);
-        }
-
         $normalizedPattern = \preg_replace('/[\s\-,]/', '', $pattern);
         if ($normalizedPattern === null || $normalizedPattern === '') {
             throw new InvalidPattern('Pattern cannot be empty');

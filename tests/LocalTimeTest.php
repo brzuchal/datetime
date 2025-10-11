@@ -177,11 +177,31 @@ final class LocalTimeTest extends TestCase
         self::assertSame('12:00:00.987654', (string) $time);
     }
 
+    public function testMidnightReturnsZeroedComponents(): void
+    {
+        $midnight = LocalTime::midnight();
+
+        self::assertSame(0, $midnight->hour);
+        self::assertSame(0, $midnight->minute);
+        self::assertSame(0, $midnight->second);
+        self::assertSame(0, $midnight->nano);
+    }
+
+    public function testNoonReturnsTwelveOclockComponents(): void
+    {
+        $noon = LocalTime::noon();
+
+        self::assertSame(12, $noon->hour);
+        self::assertSame(0, $noon->minute);
+        self::assertSame(0, $noon->second);
+        self::assertSame(0, $noon->nano);
+    }
+
     public function testSerializeProducesMinimalPayload(): void
     {
         $time = LocalTime::of(7, 8, 9, 123_400_000);
 
-        self::assertSame(['time' => '07:08:09.1234'], $time->__serialize());
+        self::assertSame(['value' => '07:08:09.1234'], $time->__serialize());
 
         $roundTripped = \unserialize(\serialize($time));
 

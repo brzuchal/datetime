@@ -2,7 +2,7 @@
 
 ## Unreleased
 - **API additions**
-  - Introduce LocalTime value object with validation, arithmetic helpers, and TemporalAccessor integration.
+  - Introduce a LocalTime value object with validation, arithmetic helpers, and TemporalAccessor integration.
   - Add InvalidTime exception for clearer range violations.
   - Add LocalDateTime aggregate covering combined date/time arithmetic, Instant conversion, and TemporalAccessor support.
 - **Security**
@@ -17,12 +17,15 @@
   - Support fractional seconds in ISO extended duration parsing/formatting with nanosecond precision.
   - Add regression tests covering fractional inputs for both duration formats.
 - **Calendar adjustments**
+  - Replace the runtime calendar interface/registry with a static `BaseGJCalendar` helper used by `IsoCalendar`.
+  - Keep ISO arithmetic ISO-only via `IsoCalendar`; future calendars can reuse the same base without exposing registries.
   - Skip astronomical year zero when shifting months across BCE/CE boundaries.
-  - Normalise ISO week-based arithmetic for BCE years to avoid invalid modulo results.
-  - Normalise IsoCalendarSystem 400-year cycle arithmetic so yearStartDay() remains accurate for negative years.
+  - Normalize ISO week-based arithmetic for BCE years to avoid invalid modulo results.
+  - Normalize IsoCalendar 400-year cycle arithmetic so yearStartDay() remains accurate for negative years.
   - Fix LocalDate weekOfYear/weekOfMonth calculations to follow ISO rules and add boundary tests.
-- **Registry improvements**
-  - Add CalendarSystemRegistry::all(), variadic register(), and reset() helpers for better discovery and test isolation.
+- **Documentation**
+  - Refresh README with ISO-only messaging, `isoEra` examples, and internal overview.
+  - Clarify review checklist to reference the new static `IsoCalendar` architecture.
 - **Dependency clean-up**
   - Remove unused ext-gmp requirement from composer metadata and docs.
 - **Temporal units**

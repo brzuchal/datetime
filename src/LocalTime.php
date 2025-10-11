@@ -27,7 +27,7 @@ final readonly class LocalTime implements TemporalAccessor
         TemporalField::AmPm,
     ];
 
-    public const SERIALIZED_TIME_FORMAT = '%02d:%02d:%02d';
+    public const string SERIALIZED_TIME_FORMAT = '%02d:%02d:%02d';
 
     /**
      * @param int<0,23> $hour   Hour of day in a 24-hour clock.
@@ -84,7 +84,9 @@ final readonly class LocalTime implements TemporalAccessor
         self::ensureWithinLimits($secondOfDay, TimeUnit::SECONDS_PER_DAY - 1, 'second of day');
 
         $hour = \intdiv($secondOfDay, TimeUnit::SECONDS_PER_HOUR);
+        \assert($hour >= 0 && $hour <= 23);
         $minute = \intdiv($secondOfDay % TimeUnit::SECONDS_PER_HOUR, TimeUnit::SECONDS_PER_MINUTE);
+        \assert($minute >= 0 && $minute <= 59);
         $second = $secondOfDay % TimeUnit::SECONDS_PER_MINUTE;
 
         return new self($hour, $minute, $second, 0);
@@ -104,13 +106,17 @@ final readonly class LocalTime implements TemporalAccessor
         self::ensureWithinLimits($nanoOfDay, TimeUnit::NANOS_PER_DAY - 1, 'nanosecond of day');
 
         $hour = \intdiv($nanoOfDay, TimeUnit::NANOS_PER_HOUR);
+        \assert($hour >= 0 && $hour <= 23);
         $nanoOfDay -= $hour * TimeUnit::NANOS_PER_HOUR;
 
         $minute = \intdiv($nanoOfDay, TimeUnit::NANOS_PER_MINUTE);
+        \assert($minute >= 0 && $minute <= 59);
         $nanoOfDay -= $minute * TimeUnit::NANOS_PER_MINUTE;
 
         $second = \intdiv($nanoOfDay, TimeUnit::NANOS_PER_SECOND);
+        \assert($second >= 0 && $second <= 59);
         $nano = $nanoOfDay - $second * TimeUnit::NANOS_PER_SECOND;
+        \assert($nano >= 0 && $nano <= 999999999);
 
         return new self($hour, $minute, $second, $nano);
     }
@@ -311,30 +317,31 @@ final readonly class LocalTime implements TemporalAccessor
     }
 
     /**
-     * @return array{time: non-empty-string}
+     * @return array{value: non-empty-string}
      */
     public function __serialize(): array
     {
         $time = (string) $this;
         \assert($time !== '');
 
-        return ['time' => $time];
+        return ['value' => $time];
     }
 
     /**
      * @param array<string,mixed> $data
+     * @throws InvalidTime
      */
     public function __unserialize(array $data): void
     {
-        if (! isset($data['time'])) {
+        if (! isset($data['value'])) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s payload missing required key.', self::class));
         }
 
-        if (! \is_string($data['time']) || $data['time'] === '') {
+        if (! \is_string($data['value']) || $data['value'] === '') {
             throw new \UnexpectedValueException(\sprintf('Serialized %s time must be a non-empty string.', self::class));
         }
 
-        $components = self::parseSerializedTime($data['time']);
+        $components = self::parseSerializedTime($data['value']);
 
         self::ensureWithinLimits($components['hour'], 23, 'hour');
         self::ensureWithinLimits($components['minute'], 59, 'minute');
@@ -359,7 +366,7 @@ final readonly class LocalTime implements TemporalAccessor
         $fraction = $parts[1] ?? '';
 
         $scan = \sscanf($base, self::SERIALIZED_TIME_FORMAT);
-        if ($scan === null || \count($scan) !== 3) {
+        if (! \is_array($scan) || ! isset($scan[0], $scan[1], $scan[2])) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s time is malformed.', self::class));
         }
 
@@ -367,6 +374,18 @@ final readonly class LocalTime implements TemporalAccessor
 
         if ($base !== \sprintf(self::SERIALIZED_TIME_FORMAT, $hour, $minute, $second)) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s time contains invalid numeric components.', self::class));
+        }
+
+        if ($hour < 0 || $hour > 23) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s hour must be between 0 and 23.', self::class));
+        }
+
+        if ($minute < 0 || $minute > 59) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s minute must be between 0 and 59.', self::class));
+        }
+
+        if ($second < 0 || $second > 59) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s second must be between 0 and 59.', self::class));
         }
 
         if ($fraction !== '') {
@@ -377,6 +396,10 @@ final readonly class LocalTime implements TemporalAccessor
             $nano = (int) ($fraction . \str_repeat('0', 9 - \strlen($fraction)));
         } else {
             $nano = 0;
+        }
+
+        if ($nano < 0 || $nano > TimeUnit::NANOS_PER_SECOND - 1) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s nanosecond must be between 0 and 999999999.', self::class));
         }
 
         return [

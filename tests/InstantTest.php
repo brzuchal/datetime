@@ -12,8 +12,8 @@ final class InstantTest extends TestCase
     public function testNow(): void
     {
         $instant = Instant::now();
-
-        $expected = (int) (\microtime(true) * 10_000_000 / self::ROUNDING_FACTOR);
+        $timestamp = \microtime(true);
+        $expected = (int) ($timestamp * 10_000_000 / self::ROUNDING_FACTOR);
         $actual = (int) ($instant->ticks / self::ROUNDING_FACTOR);
 
         // Allow a small difference to account for system timing uncertainties

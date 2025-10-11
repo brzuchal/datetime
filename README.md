@@ -15,16 +15,17 @@ composer require brzuchal/datetime
 
 ### LocalDate
 
-Represents a date without time or timezone.
+Represents an ISO-8601 date (proleptic Gregorian) without time or timezone.
 
 ```php
 use Brzuchal\DateTime\LocalDate;
 
 $date = LocalDate::of(2023, 5, 10);
 
-echo $date->year;   // 2023
-echo $date->month;  // 5
-echo $date->day;    // 10
+echo $date->year;    // 2023
+echo $date->month;   // 5
+echo $date->day;     // 10
+echo $date->era;  // Brzuchal\DateTime\CalendarSystems\IsoEra::CommonEra
 
 echo (string) $date; // "2023-05-10"
 ```
@@ -65,8 +66,14 @@ The constructor checks:
 * that month is in range 1–12,
 * that day is valid for the given month (including leap years).
 
-### 100% ext-date free
-This library does not use PHP’s native DateTime, DateTimeImmutable, or ext-date at all.
+### ISO-only, ext-date free core
+LocalDate and friends are intentionally ISO-only, backed by static ISO calendar logic.
+No PHP `ext-date` types are used anywhere.
+
+### Calendar internals
+- `IsoCalendar` encapsulates proleptic Gregorian math; it exposes static helpers for conversions.
+- Shared Gregorian/Julian calculations live in `BaseGJCalendar`, keeping algorithms reusable for future calendars without exposing dynamic state or registries.
+- Era information is represented by the `IsoEra` enum and surfaced lazily on `LocalDate` instances.
 
 ### 🛣 Roadmap
 * `LocalTime`, `LocalDateTime`

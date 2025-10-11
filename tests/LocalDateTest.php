@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Brzuchal\DateTime\CalendarSystems\UnknownCalendarSystem;
 use Brzuchal\DateTime\Duration;
 use Brzuchal\DateTime\Format\InvalidInput;
 use Brzuchal\DateTime\InvalidDate;
@@ -78,6 +77,46 @@ final class LocalDateTest extends TestCase
         self::assertSame(4, $result->month);
         // April 30th is 10 days before May 10th
         self::assertSame(30, $result->day);
+    }
+
+    public function testMinusDaysCrossesYearBoundary(): void
+    {
+        $initial = LocalDate::of(2024, 1, 1);
+        $result = $initial->minus(days: 1);
+
+        self::assertSame(2023, $result->year);
+        self::assertSame(12, $result->month);
+        self::assertSame(31, $result->day);
+    }
+
+    public function testMinusMonthsMovesBackwardAcrossYearBoundary(): void
+    {
+        $initial = LocalDate::of(2024, 1, 31);
+        $result = $initial->minus(months: 1);
+
+        self::assertSame(2023, $result->year);
+        self::assertSame(12, $result->month);
+        self::assertSame(31, $result->day);
+    }
+
+    public function testMinusYearsPreservesMonthAndDay(): void
+    {
+        $initial = LocalDate::of(2020, 3, 15);
+        $result = $initial->minus(years: 1);
+
+        self::assertSame(2019, $result->year);
+        self::assertSame(3, $result->month);
+        self::assertSame(15, $result->day);
+    }
+
+    public function testMinusWithMixedComponents(): void
+    {
+        $initial = LocalDate::of(2024, 3, 31);
+        $result = $initial->minus(years: 1, months: 1, days: 5);
+
+        self::assertSame(2023, $result->year);
+        self::assertSame(2, $result->month);
+        self::assertSame(23, $result->day);
     }
 
     public function testAddDurationWithTimeComponents(): void
@@ -207,10 +246,10 @@ final class LocalDateTest extends TestCase
         self::assertEquals($localDate->day, $restoredLocalDate->day);
     }
 
-    public function testUnserializeRejectsMissingCalendar(): void
+    public function testUnserializeRejectsMissingDate(): void
     {
         $class = LocalDate::class;
-        $payload = 'O:' . \strlen($class) . ':"' . $class . '":1:{s:4:"date";s:10:"2023-05-10";}';
+        $payload = 'O:' . \strlen($class) . ':"' . $class . '":0:{}';
 
         $this->expectException(UnexpectedValueException::class);
 
@@ -220,29 +259,29 @@ final class LocalDateTest extends TestCase
     public function testUnserializeRejectsMalformedDate(): void
     {
         $class = LocalDate::class;
-        $payload = 'O:' . \strlen($class) . ':"' . $class . '":2:{s:4:"date";s:10:"2023-0a-10";s:8:"calendar";s:3:"ISO";}';
+        $payload = 'O:' . \strlen($class) . ':"' . $class . '":1:{s:4:"date";s:10:"2023-0a-10";}';
 
         $this->expectException(UnexpectedValueException::class);
 
         unserialize($payload, ['allowed_classes' => [LocalDate::class]]);
     }
 
-    public function testUnserializeRejectsInvalidCalendarDate(): void
+    public function testUnserializeRejectsNegativeMonth(): void
     {
         $class = LocalDate::class;
-        $payload = 'O:' . \strlen($class) . ':"' . $class . '":2:{s:4:"date";s:10:"2023-02-30";s:8:"calendar";s:3:"ISO";}';
+        $payload = 'O:' . \strlen($class) . ':"' . $class . '":1:{s:4:"date";s:10:"2023--5-10";}';
 
         $this->expectException(UnexpectedValueException::class);
 
         unserialize($payload, ['allowed_classes' => [LocalDate::class]]);
     }
 
-    public function testUnserializeRejectsUnknownCalendar(): void
+    public function testUnserializeRejectsInvalidIsoDate(): void
     {
         $class = LocalDate::class;
-        $payload = 'O:' . \strlen($class) . ':"' . $class . '":2:{s:4:"date";s:10:"2023-05-10";s:8:"calendar";s:4:"FAKE";}';
+        $payload = 'O:' . \strlen($class) . ':"' . $class . '":1:{s:4:"date";s:10:"2023-02-30";}';
 
-        $this->expectException(UnknownCalendarSystem::class);
+        $this->expectException(UnexpectedValueException::class);
 
         unserialize($payload, ['allowed_classes' => [LocalDate::class]]);
     }
@@ -351,5 +390,27 @@ final class LocalDateTest extends TestCase
             ['9999-12-31', 0, 1, 1, '10000-02-01'], // Large future test
             ['0001-01-01', -1, -1, -1, '-0001-11-30'], // Large negative test
         ];
+    }
+
+    public function testSerializeRoundTripReturnsIdenticalDate(): void
+    {
+        $date = LocalDate::of(2024, 7, 14);
+
+        $restored = unserialize(serialize($date));
+
+        self::assertInstanceOf(LocalDate::class, $restored);
+        self::assertSame(2024, $restored->year);
+        self::assertSame(7, $restored->month);
+        self::assertSame(14, $restored->day);
+    }
+
+    public function testUnserializeRejectsInvalidIsoPayload(): void
+    {
+        $date = (new \ReflectionClass(LocalDate::class))->newInstanceWithoutConstructor();
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('Serialized Brzuchal\\DateTime\\LocalDate month must be between 1 and 12.');
+
+        $date->__unserialize(['value' => '2024-13-15']);
     }
 }

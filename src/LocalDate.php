@@ -2,16 +2,11 @@
 
 namespace Brzuchal\DateTime;
 
-use Brzuchal\DateTime\CalendarSystems\CalendarSystem;
-use Brzuchal\DateTime\CalendarSystems\CalendarSystemRegistry;
-use Brzuchal\DateTime\CalendarSystems\Era;
-use Brzuchal\DateTime\CalendarSystems\IsoCalendarSystem;
-use Brzuchal\DateTime\CalendarSystems\UnknownCalendarSystem;
+use Brzuchal\DateTime\CalendarSystems\IsoCalendar;
+use Brzuchal\DateTime\CalendarSystems\IsoEra;
 use Brzuchal\DateTime\Format\DateTimeFormat;
 use Brzuchal\DateTime\Format\DateTimeFormatter;
 use Brzuchal\DateTime\Format\InvalidInput;
-use Brzuchal\DateTime\Format\InvalidPattern;
-use Brzuchal\DateTime\Format\UnsupportedPatternSymbol;
 use Brzuchal\DateTime\Temporal\TemporalAccessor;
 use Brzuchal\DateTime\Temporal\TemporalField;
 
@@ -30,7 +25,7 @@ use Brzuchal\DateTime\Temporal\TemporalField;
  */
 final class LocalDate implements TemporalAccessor
 {
-    public const SERIALIZED_DATE_FORMAT = '%04d-%02d-%02d';
+    public const string SERIALIZED_DATE_FORMAT = '%04d-%02d-%02d';
 
     /**
      * @param int $year  Represents a specific calendar year in the proleptic Gregorian calendar system.
@@ -41,7 +36,6 @@ final class LocalDate implements TemporalAccessor
         public readonly int $year,
         public readonly int $month,
         public readonly int $day,
-        public readonly CalendarSystem $calendar,
     ) {
     }
 
@@ -51,69 +45,43 @@ final class LocalDate implements TemporalAccessor
      * Represents a number of days from the beginning of year 0
      */
     private(set) int $epochDay {
-        get => $this->epochDay ??= $this->calendar->epochDayFromDate($this->year, $this->month, $this->day);
+        get => $this->epochDay ??= IsoCalendar::epochDayFromDate($this->year, $this->month, $this->day);
     }
 
-    /**
-     * Indicates whether the current year is a leap year.
-     */
-    private(set) bool $isLeapYear {
-        get => $this->isLeapYear ??= $this->calendar->isLeapYear($this->year);
-    }
+    /** Indicates whether the current year is a leap year. */
+    private(set) bool $isLeapYear { get => $this->isLeapYear ??= IsoCalendar::isLeapYear($this->year); }
 
-    /**
-     * Represents the day of the week.
-     */
-    public int $dayOfWeek {
-        get => $this->calculateDayOfWeek();
-    }
+    /** Represents the day of the week. */
+    public int $dayOfWeek { get => $this->calculateDayOfWeek(); }
 
-    /**
-     * The day of the year, typically ranging from 1 to 365, or 1 to 366 in a leap year.
-     */
-    public int $dayOfYear {
-        get => $this->calendar->dayOfYear($this->year, $this->month, $this->day);
-    }
+    /** The day of the year, typically ranging from 1 to 365, or 1 to 366 in a leap year. */
+    public int $dayOfYear { get => IsoCalendar::dayOfYear($this->year, $this->month, $this->day); }
 
     /**
      * Calculates the ISO week number of the year for the current date.
      * The first week of the year is defined as the one that contains January 4th,
      * and weeks start on a Monday.
      */
-    public int $weekOfYear {
-        get => $this->calculateWeekOfYear();
-    }
+    public int $weekOfYear { get => $this->calculateWeekOfYear(); }
 
     /**
      * Calculates the week of the month for the current date.
      * The value is determined by counting ISO weeks starting on Monday within the month.
      */
-    public int $weekOfMonth {
-        get => $this->calculateWeekOfMonth();
-    }
-
-    public Era $era {
-        get => $this->calendar->eraOf($this->year, $this->month, $this->day);
-    }
+    public int $weekOfMonth { get => $this->calculateWeekOfMonth(); }
 
     /**
-     * Creates a new instance from year-month-day.
+     * @var IsoEra Lazily derived ISO era based on the year sign.
+     */
+    public IsoEra $era { get => $this->era ??= IsoEra::fromYear($this->year); }
+
+    /**
+     * Creates a new instance from year-month-day in the ISO-8601 calendar system.
      *
-     * This method allows creating a date aligned with a given {@see CalendarSystem}. By default,
-     * it uses the {@see IsoCalendarSystem}, but you can optionally provide a custom one.
-     *
-     * Basic example:
+     * Example usage:
      * <code>
      * $date = LocalDate::of(2024, 2, 29);
-     * // Creates February 29th, 2024 in the ISO calendar system.
-     * </code>
-     *
-     * Advanced usage with a custom calendar system:
-     * <code>
-     * $customCalendar = new MyCustomCalendarSystem();
-     * $date = LocalDate::of(2024, 2, 29, $customCalendar);
-     * // Creates a date within a custom calendar system.
-     * // Throws InvalidDate if the date isn't valid in that system.
+     * // Creates February 29th, 2024.
      * </code>
      *
      * Handling invalid dates:
@@ -121,56 +89,40 @@ final class LocalDate implements TemporalAccessor
      * try {
      *     $date = LocalDate::of(2024, 2, 29);
      * } catch (InvalidDate $e) {
-     *     // February 29th, 2024 is invalid for the given calendar,
-     *     // so an exception is thrown.
      *     echo $e->getMessage();
      * }
      * </code>
      *
-     * @param int            $year           Year component.
-     * @param int<1, 12>     $month          Month of the year (1–12 for the ISO calendar).
-     * @param int<1, 31>     $day            Day of the month (1–31 depending on the calendar system).
-     * @param CalendarSystem $calendarSystem Calendar system used to validate the date; defaults to {@see IsoCalendarSystem}.
+     * @param int        $year  Year component.
+     * @param int<1, 12> $month Month of the year (1–12).
+     * @param int<1, 31> $day   Day of the month.
      *
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
+     * @throws InvalidDate When the date is not valid in the ISO calendar system.
      */
     public static function of(
         int $year,
         int $month,
         int $day,
-        CalendarSystem $calendarSystem = new IsoCalendarSystem(),
     ): self {
-        if (!$calendarSystem->isValidDate($year, $month, $day)) {
+        /** @phpstan-ignore-next-line staticMethod.alreadyNarrowedType reason: runtime validation must guard user-provided values */
+        if (! IsoCalendar::isValidDate($year, $month, $day)) {
             throw new InvalidDate(\sprintf('Invalid date provided: %s-%s-%s.', $year, $month, $day));
         }
 
-        return new self($year, $month, $day, $calendarSystem);
+        return new self($year, $month, $day);
     }
 
     /**
      * Creates an instance of the class from the specified epoch day.
      * The epoch day is the number of days since 1970-01-01 (ISO calendar system).
      *
-     * @param int $epochDay       The number of days since the epoch of 1970-01-01.
-     * @param CalendarSystem $calendarSystem Calendar system used to interpret the epoch day; defaults to {@see IsoCalendarSystem}.
-     *
-     * @return self An instance representing the date corresponding to the given epoch day.
-     *
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
+     * @param int $epochDay The number of days since the epoch of 1970-01-01.
      */
-    public static function fromEpochDay(int $epochDay, CalendarSystem $calendarSystem = new IsoCalendarSystem()): self
+    public static function fromEpochDay(int $epochDay): self
     {
-        [$year, $month, $day] = $calendarSystem->dateFromEpochDay($epochDay);
+        [$year, $month, $day] = IsoCalendar::dateFromEpochDay($epochDay);
 
-        if (! self::isValidMonth($month)) {
-            throw new \UnexpectedValueException(\sprintf('Calendar provided invalid month value: %d.', $month));
-        }
-
-        if (! self::isValidDay($day)) {
-            throw new \UnexpectedValueException(\sprintf('Calendar provided invalid day value: %d.', $day));
-        }
-
-        $date = self::of($year, $month, $day, $calendarSystem);
+        $date = new self($year, $month, $day);
         $date->epochDay = $epochDay;
 
         return $date;
@@ -184,11 +136,9 @@ final class LocalDate implements TemporalAccessor
      *
      * @return self An instance of the class representing the parsed date.
      *
-     * @throws InvalidPattern If the formatter pattern is incorrect.
      * @throws InsufficientDateComponents If parse does not provide all necessary information about the input date.
      * @throws InvalidDate If there is no valid conversion possible.
      * @throws InvalidInput If any error occurs during parsing.
-     * @throws UnsupportedPatternSymbol If formatter pattern provides unsupported symbols.
      */
     public static function parse(string $text, DateTimeFormatter|null $formatter = null): self
     {
@@ -234,9 +184,6 @@ final class LocalDate implements TemporalAccessor
 
     /**
      * Returns ISO 8601 Extended string "YYYY-MM-DD".
-     *
-     * @throws UnsupportedPatternSymbol If formatter pattern provides unsupported symbols.
-     * @throws InvalidPattern If the formatter pattern is incorrect.
      */
     public function __toString(): string
     {
@@ -253,8 +200,6 @@ final class LocalDate implements TemporalAccessor
      * @param int $days   Number of days to add.
      *
      * @return self Updated date instance.
-     *
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
      */
     public function plus(int $years = 0, int $months = 0, int $days = 0): self
     {
@@ -269,8 +214,6 @@ final class LocalDate implements TemporalAccessor
      * @param int $days   Number of days to subtract.
      *
      * @return self Updated date instance.
-     *
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
      */
     public function minus(int $years = 0, int $months = 0, int $days = 0): self
     {
@@ -283,13 +226,11 @@ final class LocalDate implements TemporalAccessor
      * @param Duration $duration Duration composed of years, months, and days.
      *
      * @return self Adjusted date instance.
-     *
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
      */
     public function plusDuration(Duration $duration): self
     {
         $daysDelta = $duration->days
-            + $this->calendar->yearsMonthsToDays(
+            + IsoCalendar::yearsMonthsToDays(
                 year: $this->year,
                 month: $this->month,
                 day: $this->day,
@@ -298,7 +239,7 @@ final class LocalDate implements TemporalAccessor
             )
             + $duration->toTotalDays();
 
-        return self::fromEpochDay($this->epochDay + $daysDelta, $this->calendar);
+        return self::fromEpochDay($this->epochDay + $daysDelta);
     }
 
     /**
@@ -307,22 +248,30 @@ final class LocalDate implements TemporalAccessor
      * @param Duration $duration Duration composed of years, months, and days.
      *
      * @return self Adjusted date instance.
-     *
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
      */
     public function minusDuration(Duration $duration): self
     {
-        $daysDelta = $duration->days
-            + $this->calendar->yearsMonthsToDays(
-                $this->year,
-                $this->month,
-                $this->day,
-                -$duration->years,
-                -$duration->months,
-            )
-            + $duration->toTotalDays();
+        if (
+            $duration->years === 0
+            && $duration->months === 0
+            && $duration->days === 0
+            && $duration->hours === 0
+            && $duration->minutes === 0
+            && $duration->seconds === 0
+            && $duration->nanos === 0
+        ) {
+            return $this;
+        }
 
-        return self::fromEpochDay($this->epochDay - $daysDelta, $this->calendar);
+        return $this->plusDuration(new Duration(
+            years: -$duration->years,
+            months: -$duration->months,
+            days: -$duration->days,
+            hours: -$duration->hours,
+            minutes: -$duration->minutes,
+            seconds: -$duration->seconds,
+            nanos: -$duration->nanos,
+        ));
     }
 
     // Calculation methods for dates
@@ -346,73 +295,62 @@ final class LocalDate implements TemporalAccessor
     // Serialization
 
     /**
-     * @return array{date: non-empty-string, calendar: non-empty-string}
-     *
-     * @ignore
+     * @return array{value: non-empty-string}
      */
     public function __serialize(): array
     {
         $date = (string) $this;
         \assert($date !== '');
 
-        return [
-            'date' => $date,
-            'calendar' => $this->calendar->name(),
-        ];
+        return ['value' => $date];
     }
 
     /**
      * @param array<string,mixed> $data
-     *
-     * @throws UnknownCalendarSystem When the calendar system cannot be resolved.
-     * @ignore
      */
     public function __unserialize(array $data): void
     {
-        if (! isset($data['date'], $data['calendar'])) {
+        if (! \array_key_exists('value', $data)) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s payload missing required keys.', self::class));
         }
 
-        if (! \is_string($data['date']) || $data['date'] === '') {
+        if (! \is_string($data['value']) || $data['value'] === '') {
             throw new \UnexpectedValueException(\sprintf('Serialized %s date must be a non-empty string.', self::class));
         }
 
-        if (! \is_string($data['calendar']) || $data['calendar'] === '') {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s calendar must be a non-empty string.', self::class));
-        }
+        $formatter = DateTimeFormatter::of(DateTimeFormat::ExtendedIsoLocalDate);
 
-        $length = 0;
-        $parsed = \sscanf($data['date'], self::SERIALIZED_DATE_FORMAT . '%n', $yearValue, $monthValue, $dayValue, $length);
-        if ($parsed < 3 || $length !== \strlen($data['date'])) {
+        try {
+            $fields = $formatter->parse($data['value']);
+        } catch (InvalidInput) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s date is malformed.', self::class));
         }
 
-        if ($monthValue <= 0) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s month must be a positive integer.', self::class));
+        if (! $fields->supports(TemporalField::Year, TemporalField::Month, TemporalField::Day)) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s date is malformed.', self::class));
         }
 
-        if ($dayValue <= 0) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s day must be a positive integer.', self::class));
+        $year = $fields->get(TemporalField::Year);
+        $month = $fields->get(TemporalField::Month);
+        $day = $fields->get(TemporalField::Day);
+        \assert($year !== null);
+        \assert($month !== null);
+        \assert($day !== null);
+
+        if (! self::isValidMonth($month)) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s month must be between 1 and 12.', self::class));
         }
 
-        if ($data['date'] !== \sprintf(self::SERIALIZED_DATE_FORMAT, $yearValue, $monthValue, $dayValue)) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s date contains invalid numeric components.', self::class));
+        if (! self::isValidDay($day)) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s day must be between 1 and 31.', self::class));
         }
 
-        $calendar = CalendarSystemRegistry::get($data['calendar']);
-        \assert(self::isValidMonth($monthValue));
-        \assert(self::isValidDay($dayValue));
-
-        if (! $calendar->isValidDate($yearValue, $monthValue, $dayValue)) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s contains a date invalid for the provided calendar system.', self::class));
+        /** @phpstan-ignore-next-line staticMethod.alreadyNarrowedType reason: runtime validation must guard user-provided values */
+        if (! IsoCalendar::isValidDate($year, $month, $day)) {
+            throw new \UnexpectedValueException(\sprintf('Serialized %s contains a date invalid for the ISO calendar system.', self::class));
         }
 
-        self::__construct(
-            year: $yearValue,
-            month: $monthValue,
-            day: $dayValue,
-            calendar: $calendar,
-        );
+        self::__construct(year: $year, month: $month, day: $day);
     }
 
     // TemporalAccessor
@@ -427,7 +365,7 @@ final class LocalDate implements TemporalAccessor
     public function get(TemporalField $field): int|null
     {
         return match ($field) {
-            TemporalField::Era => $this->era->ordinal,
+            TemporalField::Era => $this->era->ordinal(),
             TemporalField::Year => $this->year,
             TemporalField::Month => $this->month,
             TemporalField::Day => $this->day,
@@ -438,7 +376,7 @@ final class LocalDate implements TemporalAccessor
     }
 
     /**
-     * Verifies whether all provided temporal fields are available on this instance.
+     * Verifies whether all provided temporal fields are available in this instance.
      *
      * @param TemporalField ...$fields Fields to validate.
      *
@@ -484,7 +422,7 @@ final class LocalDate implements TemporalAccessor
     }
 
     /**
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
+     * @return positive-int
      */
     private function calculateWeekOfYear(): int
     {
@@ -504,35 +442,50 @@ final class LocalDate implements TemporalAccessor
     }
 
     /**
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
+     * @return positive-int
+     *
+     * @throws InvalidDate When the date is not valid in the ISO calendar system.
      */
     private function calculateWeekOfMonth(): int
     {
         $currentWeekStart = $this->epochDay - $this->dayOfWeek;
-        $firstOfMonth = self::of($this->year, $this->month, 1, $this->calendar);
+        $firstOfMonth = self::of($this->year, $this->month, 1);
         $firstWeekStart = $firstOfMonth->epochDay - $firstOfMonth->dayOfWeek;
 
-        return \intdiv($currentWeekStart - $firstWeekStart, 7) + 1;
+        $week = \intdiv($currentWeekStart - $firstWeekStart, 7) + 1;
+
+        if ($week <= 0) {
+            throw new \LogicException('Calculated week of month must be positive.');
+        }
+
+        return $week;
     }
 
     /**
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
+     * @return positive-int
      */
     private function weeksInWeekBasedYear(int $year): int
     {
         $start = $this->weekYearStartEpochDay($year);
         $next = $this->weekYearStartEpochDay($year + 1);
+        assert($next > $start);
 
-        return \intdiv($next - $start, 7);
+        $epochDelta = $next - $start;
+        assert($epochDelta > 0);
+
+        $weeks = \intdiv($epochDelta, 7);
+
+        if ($weeks <= 0) {
+            throw new \LogicException('Week-based year must contain at least one week.');
+        }
+
+        return $weeks;
     }
 
-    /**
-     * @throws InvalidDate When the date is not valid for the provided {@see CalendarSystem}.
-     */
     private function weekYearStartEpochDay(int $year): int
     {
-        $jan4Epoch = $this->calendar->epochDayFromDate($year, 1, 4);
-        $jan4 = self::fromEpochDay($jan4Epoch, $this->calendar);
+        $jan4Epoch = IsoCalendar::epochDayFromDate($year, 1, 4);
+        $jan4 = self::fromEpochDay($jan4Epoch);
 
         return $jan4->epochDay - $jan4->dayOfWeek;
     }
