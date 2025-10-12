@@ -14,6 +14,7 @@ enum TemporalField
     case Hour12;   // 12-hour
     case Minute;
     case Second;
+    case Nano;
     case AmPm;
 
     case DayOfWeek;
@@ -32,6 +33,7 @@ enum TemporalField
             self::Hour12  => 'h',
             self::Minute  => 'i',
             self::Second  => 's',
+            self::Nano    => 'f',
             self::AmPm    => 'a',
             default       => '',
         };
@@ -40,14 +42,18 @@ enum TemporalField
     public static function fromSymbol(string $symbol): self|null
     {
         return match ($symbol) {
-            'Y', 'y', 'u' => self::Year,
-            'm'           => self::Month,
-            'd'           => self::Day,
-            'H'           => self::Hour,
-            'h'           => self::Hour12,
-            'i'           => self::Minute,
-            's'           => self::Second,
-            'a'           => self::AmPm,
+            'Y', 'y', 'X', 'o' => self::Year,
+            'm', 'n'           => self::Month,
+            'd', 'j'           => self::Day,
+            'H', 'G'           => self::Hour,
+            'h', 'g'           => self::Hour12,
+            'i'                => self::Minute,
+            's'                => self::Second,
+            'f', 'u', 'v'      => self::Nano,
+            'a', 'A'           => self::AmPm,
+            'w', 'N'           => self::DayOfWeek,
+            'z'                => self::DayOfYear,
+            'W'                => self::WeekOfYear,
             default       => null,
         };
     }

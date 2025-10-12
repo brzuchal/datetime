@@ -41,8 +41,7 @@ final class LocalDateTime implements TemporalAccessor
     public int $nano { get => $this->time->nano; }
 
     private function __construct(public readonly LocalDate $date, public readonly LocalTime $time)
-    {
-    }
+    {}
 
     /**
      * @return array{value: non-empty-string}
@@ -580,6 +579,7 @@ final class LocalDateTime implements TemporalAccessor
                     TemporalField::Hour12,
                     TemporalField::Minute,
                     TemporalField::Second,
+                    TemporalField::Nano,
                     TemporalField::AmPm,
                 ],
                 true,
@@ -599,6 +599,7 @@ final class LocalDateTime implements TemporalAccessor
                     TemporalField::DayOfYear,
                     TemporalField::DayOfWeek,
                     TemporalField::WeekOfYear,
+                    TemporalField::WeekOfMonth,
                 ],
             )
         ) {
@@ -634,6 +635,7 @@ final class LocalDateTime implements TemporalAccessor
                     TemporalField::Hour12,
                     TemporalField::Minute,
                     TemporalField::Second,
+                    TemporalField::Nano,
                     TemporalField::AmPm,
                 ], true)
             ) {

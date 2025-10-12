@@ -24,6 +24,7 @@ final readonly class LocalTime implements TemporalAccessor
         TemporalField::Hour12,
         TemporalField::Minute,
         TemporalField::Second,
+        TemporalField::Nano,
         TemporalField::AmPm,
     ];
 
@@ -247,6 +248,7 @@ final readonly class LocalTime implements TemporalAccessor
             TemporalField::Hour12 => $this->hour === 0 ? 12 : (($this->hour - 1) % 12) + 1,
             TemporalField::Minute => $this->minute,
             TemporalField::Second => $this->second,
+            TemporalField::Nano => $this->nano,
             TemporalField::AmPm => $this->hour >= 12 ? 1 : 0,
             default => null,
         };

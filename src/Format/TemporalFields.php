@@ -14,6 +14,7 @@ final readonly class TemporalFields implements TemporalAccessor
         public int|null $hour = null,
         public int|null $minute = null,
         public int|null $second = null,
+        public int|null $nano = null,
     ) {}
 
     public function get(TemporalField $field): int|null
@@ -25,6 +26,7 @@ final readonly class TemporalFields implements TemporalAccessor
             TemporalField::Hour => $this->hour,
             TemporalField::Minute => $this->minute,
             TemporalField::Second => $this->second,
+            TemporalField::Nano => $this->nano,
             default => null,
         };
     }

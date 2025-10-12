@@ -391,6 +391,8 @@ final class LocalDate implements TemporalAccessor
             TemporalField::Day => $this->day,
             TemporalField::DayOfYear => $this->dayOfYear,
             TemporalField::DayOfWeek => $this->dayOfWeek,
+            TemporalField::WeekOfYear => $this->weekOfYear,
+            TemporalField::WeekOfMonth => $this->weekOfMonth,
             default => null,
         };
     }
@@ -412,7 +414,9 @@ final class LocalDate implements TemporalAccessor
                     TemporalField::Month,
                     TemporalField::Day,
                     TemporalField::DayOfYear,
-                    TemporalField::DayOfWeek => true,
+                    TemporalField::DayOfWeek,
+                    TemporalField::WeekOfYear,
+                    TemporalField::WeekOfMonth => true,
                     default => false,
                 }
             ) {

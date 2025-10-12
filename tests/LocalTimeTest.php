@@ -135,11 +135,12 @@ final class LocalTimeTest extends TestCase
     {
         $time = LocalTime::of(21, 5, 9);
 
-        self::assertTrue($time->supports(TemporalField::Hour, TemporalField::Minute, TemporalField::Second));
+        self::assertTrue($time->supports(TemporalField::Hour, TemporalField::Minute, TemporalField::Second, TemporalField::Nano));
         self::assertFalse($time->supports(TemporalField::Year));
 
         self::assertSame(21, $time->get(TemporalField::Hour));
         self::assertSame(9, $time->get(TemporalField::Second));
+        self::assertSame(0, $time->get(TemporalField::Nano));
         self::assertSame(21 * 3_600 + 5 * 60 + 9, intdiv($time->toNanoOfDay(), 1_000_000_000));
         self::assertSame(9, $time->get(TemporalField::Hour12));
         self::assertSame(1, $time->get(TemporalField::AmPm));

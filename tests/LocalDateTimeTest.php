@@ -120,6 +120,7 @@ final class LocalDateTimeTest extends TestCase
         self::assertSame(1, $dateTime->get(TemporalField::Day));
         self::assertSame(16, $dateTime->hour);
         self::assertSame(1, $dateTime->get(TemporalField::AmPm));
+        self::assertSame(0, $dateTime->get(TemporalField::Nano));
     }
 
     public function testCompareToAndEqualTo(): void
