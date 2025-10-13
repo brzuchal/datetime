@@ -71,8 +71,7 @@ LocalDate and friends are intentionally ISO-only, backed by static ISO calendar 
 No PHP `ext-date` types are used anywhere.
 
 ### Calendar internals
-- `IsoCalendar` encapsulates proleptic Gregorian math; it exposes static helpers for conversions.
-- Shared Gregorian/Julian calculations live in `BaseGJCalendar`, keeping algorithms reusable for future calendars without exposing dynamic state or registries.
+- `IsoCalendar` is the single source of proleptic Gregorian (ISO-8601) math and exposes static helpers for conversions.
 - Era information is represented by the `IsoEra` enum and surfaced lazily on `LocalDate` instances.
 
 ### 🛣 Roadmap

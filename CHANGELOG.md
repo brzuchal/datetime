@@ -17,8 +17,8 @@
   - Support fractional seconds in ISO extended duration parsing/formatting with nanosecond precision.
   - Add regression tests covering fractional inputs for both duration formats.
 - **Calendar adjustments**
-  - Replace the runtime calendar interface/registry with a static `BaseGJCalendar` helper used by `IsoCalendar`.
-  - Keep ISO arithmetic ISO-only via `IsoCalendar`; future calendars can reuse the same base without exposing registries.
+  - Replace the runtime calendar registry with a single static `IsoCalendar` helper that owns all ISO conversions.
+  - Keep ISO arithmetic ISO-only via `IsoCalendar`; future calendars can introduce dedicated helpers without shared registries.
   - Skip astronomical year zero when shifting months across BCE/CE boundaries.
   - Normalize ISO week-based arithmetic for BCE years to avoid invalid modulo results.
   - Normalize IsoCalendar 400-year cycle arithmetic so yearStartDay() remains accurate for negative years.
