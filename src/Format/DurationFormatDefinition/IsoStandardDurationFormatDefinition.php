@@ -57,25 +57,4 @@ final readonly class IsoStandardDurationFormatDefinition implements DurationForm
 
         return $buffer;
     }
-
-    /**
-     * @return array{0:int,1:int}
-     */
-    private static function parseSecondsAndNanos(string|null $value): array
-    {
-        if ($value === null) {
-            return [0, 0];
-        }
-
-        if (\str_contains($value, '.') || \str_contains($value, ',')) {
-            $parts = \preg_split('/[.,]/', $value, 2);
-            assert($parts !== false);
-            [$sec, $frac] = $parts;
-            $nanos = (int) \str_pad(\substr($frac, 0, 9), 9, '0');
-
-            return [(int) $sec, $nanos];
-        }
-
-        return [(int) $value, 0];
-    }
 }

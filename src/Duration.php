@@ -14,9 +14,6 @@ final readonly class Duration
     /**
      * Initialises a new instance of the class with the specified time components.
      *
-     * @param int $years   The number of years to initialise. Default is 0.
-     * @param int $months  The number of months to initialise. Default is 0.
-     * @param int $days    The number of days to initialise. Default is 0.
      * @param int $hours   The number of hours to initialise. Default is 0.
      * @param int $minutes The number of minutes to initialise. Default is 0.
      * @param int $seconds The number of seconds to initialise. Default is 0.
@@ -134,9 +131,6 @@ final readonly class Duration
     /**
      * Returns a new instance with the specified period or duration added to the current values.
      *
-     * @param int $years   The number of years to add.
-     * @param int $months  The number of months to add.
-     * @param int $days    The number of days to add.
      * @param int $hours   The number of hours to add.
      * @param int $minutes The number of minutes to add.
      * @param int $seconds The number of seconds to add.
@@ -157,9 +151,6 @@ final readonly class Duration
     /**
      * Creates a new instance with the specified time values subtracted.
      *
-     * @param int $years   The number of years to subtract.
-     * @param int $months  The number of months to subtract.
-     * @param int $days    The number of days to subtract.
      * @param int $hours   The number of hours to subtract.
      * @param int $minutes The number of minutes to subtract.
      * @param int $seconds The number of seconds to subtract.
