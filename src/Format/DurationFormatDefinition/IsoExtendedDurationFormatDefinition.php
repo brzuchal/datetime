@@ -15,7 +15,7 @@ final readonly class IsoExtendedDurationFormatDefinition implements DurationForm
     {
         if (
             ! \preg_match(
-                '/^P(?P<years>\d{4})-(?P<months>\d{2})-(?P<days>\d{2})T(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2}(?:[.,]\d{1,9})?)$/',
+                '/^T(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2}(?:[.,]\d{1,9})?)$/',
                 $text,
                 $matches,
                 \PREG_UNMATCHED_AS_NULL,
@@ -28,13 +28,10 @@ final readonly class IsoExtendedDurationFormatDefinition implements DurationForm
         [$seconds, $nanos] = self::parseSeconds($secondsString);
 
         return new Duration(
-            (int) $matches['years'],
-            (int) $matches['months'],
-            (int) $matches['days'],
-            (int) $matches['hours'],
-            (int) $matches['minutes'],
-            $seconds,
-            $nanos,
+            hours: (int) $matches['hours'],
+            minutes: (int) $matches['minutes'],
+            seconds: $seconds,
+            nanos: $nanos,
         );
     }
 
@@ -46,10 +43,7 @@ final readonly class IsoExtendedDurationFormatDefinition implements DurationForm
         }
 
         return sprintf(
-            'P%04d-%02d-%02dT%02d:%02d:%s',
-            $duration->years,
-            $duration->months,
-            $duration->days,
+            'T%02d:%02d:%s',
             $duration->hours,
             $duration->minutes,
             $seconds,

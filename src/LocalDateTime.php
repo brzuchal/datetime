@@ -2,6 +2,8 @@
 
 namespace Brzuchal\DateTime;
 
+use Brzuchal\DateTime\Temporal\HandlesTemporalQueriesAndAdjustments;
+use Brzuchal\DateTime\Temporal\Temporal;
 use Brzuchal\DateTime\Temporal\TemporalAccessor;
 use Brzuchal\DateTime\Temporal\TemporalField;
 use Brzuchal\DateTime\Temporal\TimeUnit;
@@ -18,8 +20,10 @@ use Brzuchal\DateTime\Temporal\TimeUnit;
  * echo (string) $dt2; // "2025-03-17T09:15:00"
  * </code>
  */
-final class LocalDateTime implements TemporalAccessor
+final class LocalDateTime implements Temporal
 {
+    use HandlesTemporalQueriesAndAdjustments;
+
     public int $year { get => $this->date->year; }
 
     /** @var int<1, 12> */
@@ -90,7 +94,6 @@ final class LocalDateTime implements TemporalAccessor
             throw new \UnexpectedValueException(\sprintf('Serialized %s date contains invalid numeric components.', self::class));
         }
 
-        /** @phpstan-ignore-next-line staticMethod.alreadyNarrowedType reason: runtime validation must guard user-provided values */
         $date = LocalDate::of($yearValue, $monthValue, $dayValue);
 
         $timeParts = \explode('.', $timePayload, 2);
@@ -188,8 +191,6 @@ final class LocalDateTime implements TemporalAccessor
 
     /**
      * Creates a LocalDateTime from an {@see Instant} using the ISO-8601 calendar system.
-     *
-     * @throws InvalidTime If the time component is out of range.
      */
     public static function ofInstant(Instant $instant): self
     {
@@ -202,6 +203,29 @@ final class LocalDateTime implements TemporalAccessor
         $time = LocalTime::ofNanoOfDay($nanoOfDay);
 
         return new self($date, $time);
+    }
+
+    public static function from(TemporalAccessor $accessor): static
+    {
+        $date = LocalDate::from($accessor);
+        $time = LocalTime::from($accessor);
+
+        return new self($date, $time);
+    }
+
+    /**
+     * @return array<int, TemporalField>
+     */
+    public static function requires(): array
+    {
+        return [
+            TemporalField::Year,
+            TemporalField::Month,
+            TemporalField::Day,
+            TemporalField::Hour,
+            TemporalField::Minute,
+            TemporalField::Second,
+        ];
     }
 
     /**
@@ -294,10 +318,10 @@ final class LocalDateTime implements TemporalAccessor
     /**
      * Returns a copy of this LocalDateTime with the specified duration added.
      *
-     * Date-based units (years, months, days) are applied to the date first, then time-based units are applied.
+     * Only time-based units (hours, minutes, seconds, nanos) are applied.
      * Time overflow or underflow adjusts the date accordingly.
      *
-     * @param Duration $duration The duration to add; may contain years, months, days, hours, minutes, seconds, nanos.
+     * @param Duration $duration The duration to add.
      *
      * @return self A new LocalDateTime with the adjustment applied, or this instance if the duration is zero.
      *
@@ -306,22 +330,13 @@ final class LocalDateTime implements TemporalAccessor
     public function plus(Duration $duration): self
     {
         if (
-            $duration->years === 0
-            && $duration->months === 0
-            && $duration->days === 0
-            && $duration->hours === 0
+            $duration->hours === 0
             && $duration->minutes === 0
             && $duration->seconds === 0
             && $duration->nanos === 0
         ) {
             return $this;
         }
-
-        $date = $this->date->plus(
-            years: $duration->years,
-            months: $duration->months,
-            days: $duration->days,
-        );
 
         $currentNanoOfDay = $this->time->toNanoOfDay();
         $deltaNano = $this->durationNanoAdjustment($duration);
@@ -331,6 +346,7 @@ final class LocalDateTime implements TemporalAccessor
         $nanoOfDay = self::floorMod($newNanoTotal, TimeUnit::NANOS_PER_DAY);
         \assert($nanoOfDay >= 0 && $nanoOfDay < TimeUnit::NANOS_PER_DAY);
 
+        $date = $this->date;
         if ($dayOverflow !== 0) {
             $date = $date->plus(days: $dayOverflow);
         }
@@ -338,6 +354,30 @@ final class LocalDateTime implements TemporalAccessor
         $time = LocalTime::ofNanoOfDay($nanoOfDay);
 
         return new self($date, $time);
+    }
+
+    /**
+     * Returns a copy of this LocalDateTime with the specified period added.
+     *
+     * @param Period $period The period to add.
+     *
+     * @return self A new LocalDateTime with the adjustment applied.
+     */
+    public function plusPeriod(Period $period): self
+    {
+        return new self($this->date->plusPeriod($period), $this->time);
+    }
+
+    /**
+     * Returns a copy of this LocalDateTime with the specified delta added.
+     *
+     * @param LocalDateTimeDelta $delta The delta to add.
+     *
+     * @return self A new LocalDateTime with the adjustment applied.
+     */
+    public function plusDelta(LocalDateTimeDelta $delta): self
+    {
+        return $this->plusPeriod($delta->period)->plus($delta->duration);
     }
 
     /**
@@ -354,10 +394,7 @@ final class LocalDateTime implements TemporalAccessor
     public function minus(Duration $duration): self
     {
         if (
-            $duration->years === 0
-            && $duration->months === 0
-            && $duration->days === 0
-            && $duration->hours === 0
+            $duration->hours === 0
             && $duration->minutes === 0
             && $duration->seconds === 0
             && $duration->nanos === 0
@@ -366,14 +403,35 @@ final class LocalDateTime implements TemporalAccessor
         }
 
         return $this->plus(new Duration(
-            years: -$duration->years,
-            months: -$duration->months,
-            days: -$duration->days,
             hours: -$duration->hours,
             minutes: -$duration->minutes,
             seconds: -$duration->seconds,
             nanos: -$duration->nanos,
         ));
+    }
+
+    /**
+     * Returns a copy of this LocalDateTime with the specified period subtracted.
+     *
+     * @param Period $period The period to subtract.
+     *
+     * @return self A new LocalDateTime with the adjustment applied.
+     */
+    public function minusPeriod(Period $period): self
+    {
+        return new self($this->date->minusPeriod($period), $this->time);
+    }
+
+    /**
+     * Returns a copy of this LocalDateTime with the specified delta subtracted.
+     *
+     * @param LocalDateTimeDelta $delta The delta to subtract.
+     *
+     * @return self A new LocalDateTime with the adjustment applied.
+     */
+    public function minusDelta(LocalDateTimeDelta $delta): self
+    {
+        return $this->minusPeriod($delta->period)->minus($delta->duration);
     }
 
     /**

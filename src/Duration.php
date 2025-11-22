@@ -25,9 +25,6 @@ final readonly class Duration
      * @return void
      */
     public function __construct(
-        public int $years = 0,
-        public int $months = 0,
-        public int $days = 0,
         public int $hours = 0,
         public int $minutes = 0,
         public int $seconds = 0,
@@ -83,41 +80,6 @@ final readonly class Duration
     }
 
     // factories
-
-    /**
-     * Creates a new instance by a given number of years.
-     *
-     * @param int $years The number of years to create the instance with.
-     * @return self A new instance initialised with the specified years.
-     */
-    public static function years(int $years): self
-    {
-        return new self(years: $years);
-    }
-
-    /**
-     * Creates a new instance by a given number of months.
-     *
-     * @param int $months The number of months to create the instance with.
-     *
-     * @return self A new instance initialised with the specified months.
-     */
-    public static function months(int $months): self
-    {
-        return new self(months: $months);
-    }
-
-    /**
-     * Creates a new instance by a given number of days.
-     *
-     * @param int $days The number of days to create the instance with.
-     *
-     * @return self A new instance initialised with the specified days.
-     */
-    public static function days(int $days): self
-    {
-        return new self(days: $days);
-    }
 
     /**
      * Creates a new instance by a given number of hours.
@@ -182,12 +144,9 @@ final readonly class Duration
      *
      * @return self A new instance with the updated values.
      */
-    public function plus(int $years = 0, int $months = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self
+    public function plus(int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self
     {
         return new self(
-            years: $this->years + $years,
-            months: $this->months + $months,
-            days: $this->days + $days,
             hours: $this->hours + $hours,
             minutes: $this->minutes + $minutes,
             seconds: $this->seconds + $seconds,
@@ -208,16 +167,77 @@ final readonly class Duration
      *
      * @return self A new instance with the adjusted time values.
      */
-    public function minus(int $years = 0, int $months = 0, int $days = 0, int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self
+    public function minus(int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self
     {
         return new self(
-            years: $this->years - $years,
-            months: $this->months - $months,
-            days: $this->days - $days,
             hours: $this->hours - $hours,
             minutes: $this->minutes - $minutes,
             seconds: $this->seconds - $seconds,
             nanos: $this->nanos - $nanos,
         );
+    }
+    /**
+     * Returns a new instance with the specified duration added to the current values.
+     *
+     * @param Duration $duration The duration to add.
+     *
+     * @return self A new instance with the updated values.
+     */
+    public function plusDuration(Duration $duration): self
+    {
+        return new self(
+            hours: $this->hours + $duration->hours,
+            minutes: $this->minutes + $duration->minutes,
+            seconds: $this->seconds + $duration->seconds,
+            nanos: $this->nanos + $duration->nanos,
+        );
+    }
+
+    /**
+     * Creates a new instance with the specified duration subtracted.
+     *
+     * @param Duration $duration The duration to subtract.
+     *
+     * @return self A new instance with the adjusted time values.
+     */
+    public function minusDuration(Duration $duration): self
+    {
+        return new self(
+            hours: $this->hours - $duration->hours,
+            minutes: $this->minutes - $duration->minutes,
+            seconds: $this->seconds - $duration->seconds,
+            nanos: $this->nanos - $duration->nanos,
+        );
+    }
+
+    /**
+     * Returns a new instance with the values multiplied by the specified scalar.
+     *
+     * @param int $scalar The scalar to multiply by.
+     *
+     * @return self A new instance with the multiplied values.
+     */
+    public function multipliedBy(int $scalar): self
+    {
+        if ($scalar === 1) {
+            return $this;
+        }
+
+        return new self(
+            hours: $this->hours * $scalar,
+            minutes: $this->minutes * $scalar,
+            seconds: $this->seconds * $scalar,
+            nanos: $this->nanos * $scalar,
+        );
+    }
+
+    /**
+     * Returns a new instance with the values negated.
+     *
+     * @return self A new instance with the negated values.
+     */
+    public function negated(): self
+    {
+        return $this->multipliedBy(-1);
     }
 }

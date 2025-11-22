@@ -1,7 +1,27 @@
 # Changelog
 
-## Unreleased
-- **API additions**
+## [1.0.0] - 2025-11-22
+
+### Breaking Changes
+- **Duration Refactoring:**
+  - `Duration` is now strictly time-based (hours, minutes, seconds, nanos).
+  - Removed `years`, `months`, `days` properties and factory methods from `Duration`.
+  - Removed `LocalDate::plusDuration()` and `LocalDate::minusDuration()`. Use `plusPeriod()` instead.
+
+### New Features
+- **Period:**
+  - Introduced `Period` class for date-based amounts (years, months, days).
+  - Added `LocalDate::plusPeriod()` and `LocalDate::minusPeriod()`.
+  - Added `LocalDateTime::plusPeriod()` and `LocalDateTime::minusPeriod()`.
+- **LocalDateTimeDelta:**
+  - Introduced `LocalDateTimeDelta` value object combining `Period` and `Duration`.
+  - Supports full ISO-8601 duration parsing (e.g., `P1Y2M3DT4H5M6S`).
+  - Added `LocalDateTime::plusDelta()` and `LocalDateTime::minusDelta()`.
+- **ISO-8601 Parsing:**
+  - Centralized ISO-8601 parsing logic in `Iso8601Parser`.
+  - Unified parsing behavior across `Period`, `Duration`, and `LocalDateTimeDelta`.
+
+### API Additions
   - Introduce a LocalTime value object with validation, arithmetic helpers, and TemporalAccessor integration.
   - Add InvalidTime exception for clearer range violations.
   - Add LocalDateTime aggregate covering combined date/time arithmetic, Instant conversion, and TemporalAccessor support.

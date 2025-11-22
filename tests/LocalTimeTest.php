@@ -2,9 +2,14 @@
 
 namespace Tests;
 
+use Brzuchal\DateTime\DayOfWeek;
+use Brzuchal\DateTime\Format\TemporalFields;
+use Brzuchal\DateTime\InsufficientTimeComponents;
 use Brzuchal\DateTime\InvalidTime;
 use Brzuchal\DateTime\LocalTime;
+use Brzuchal\DateTime\Temporal\Adjusters\DayOfWeekAdjuster;
 use Brzuchal\DateTime\Temporal\TemporalField;
+use Brzuchal\DateTime\Temporal\TemporalQueries;
 use Brzuchal\DateTime\Temporal\TimeUnit;
 use PHPUnit\Framework\TestCase;
 
@@ -196,6 +201,62 @@ final class LocalTimeTest extends TestCase
         self::assertSame(0, $noon->minute);
         self::assertSame(0, $noon->second);
         self::assertSame(0, $noon->nano);
+    }
+
+    public function testRequiredFieldsReturnHourMinuteSecond(): void
+    {
+        self::assertSame(
+            [TemporalField::Hour, TemporalField::Minute, TemporalField::Second],
+            LocalTime::requires(),
+        );
+    }
+
+    public function testFromTemporalAccessorBuildsTime(): void
+    {
+        $fields = new TemporalFields(hour: 15, minute: 45, second: 30, nano: 250);
+
+        $time = LocalTime::from($fields);
+
+        self::assertSame(15, $time->hour);
+        self::assertSame(45, $time->minute);
+        self::assertSame(30, $time->second);
+        self::assertSame(250, $time->nano);
+    }
+
+    public function testFromTemporalAccessorMissingSecondThrows(): void
+    {
+        $fields = new TemporalFields(hour: 15, minute: 45);
+
+        $this->expectException(InsufficientTimeComponents::class);
+
+        LocalTime::from($fields);
+    }
+
+    public function testQueryReturnsLocalTime(): void
+    {
+        $fields = new TemporalFields(hour: 6, minute: 45, second: 30, nano: 123);
+
+        $result = $fields->query(TemporalQueries::localTime());
+
+        self::assertInstanceOf(LocalTime::class, $result);
+        self::assertSame(6, $result->hour);
+        self::assertSame(123, $result->nano);
+    }
+
+    public function testQueryReturnsNullWhenMissingTimeFields(): void
+    {
+        $fields = new TemporalFields(hour: 10);
+
+        self::assertNull($fields->query(TemporalQueries::localTime()));
+    }
+
+    public function testAdjusterDoesNothingForTime(): void
+    {
+        $time = LocalTime::of(8, 0);
+
+        $adjusted = $time->adjust(DayOfWeekAdjuster::nextOrSame(DayOfWeek::Monday));
+
+        self::assertSame($time, $adjusted);
     }
 
     public function testSerializeProducesMinimalPayload(): void

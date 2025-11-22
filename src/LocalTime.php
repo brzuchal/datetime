@@ -2,6 +2,8 @@
 
 namespace Brzuchal\DateTime;
 
+use Brzuchal\DateTime\Temporal\HandlesTemporalQueriesAndAdjustments;
+use Brzuchal\DateTime\Temporal\Temporal;
 use Brzuchal\DateTime\Temporal\TemporalAccessor;
 use Brzuchal\DateTime\Temporal\TemporalField;
 use Brzuchal\DateTime\Temporal\TimeUnit;
@@ -17,8 +19,10 @@ use Brzuchal\DateTime\Temporal\TimeUnit;
  * echo (string) $time; // "14:30:00"
  * </code>
  */
-final readonly class LocalTime implements TemporalAccessor
+final readonly class LocalTime implements Temporal
 {
+    use HandlesTemporalQueriesAndAdjustments;
+
     private const array SUPPORTED_FIELDS = [
         TemporalField::Hour,
         TemporalField::Hour12,
@@ -71,6 +75,25 @@ final readonly class LocalTime implements TemporalAccessor
         return new self($hour, $minute, $second, $nano);
     }
 
+    public static function from(TemporalAccessor $accessor): static
+    {
+        if (! $accessor->supports(...self::requires())) {
+            throw new InsufficientTimeComponents(\sprintf('Insufficient fields for %s', self::class));
+        }
+
+        $hour = $accessor->get(TemporalField::Hour);
+        $minute = $accessor->get(TemporalField::Minute);
+        $second = $accessor->get(TemporalField::Second);
+        \assert($hour !== null);
+        \assert($minute !== null);
+        \assert($second !== null);
+
+        $nano = $accessor->get(TemporalField::Nano) ?? 0;
+
+        /** @phpstan-ignore-next-line method.alreadyNarrowedType */
+        return self::of($hour, $minute, $second, $nano);
+    }
+
     /**
      * Create a LocalTime from a second-of-day value (0..86399).
      *
@@ -106,20 +129,7 @@ final readonly class LocalTime implements TemporalAccessor
     {
         self::ensureWithinLimits($nanoOfDay, TimeUnit::NANOS_PER_DAY - 1, 'nanosecond of day');
 
-        $hour = \intdiv($nanoOfDay, TimeUnit::NANOS_PER_HOUR);
-        \assert($hour >= 0 && $hour <= 23);
-        $nanoOfDay -= $hour * TimeUnit::NANOS_PER_HOUR;
-
-        $minute = \intdiv($nanoOfDay, TimeUnit::NANOS_PER_MINUTE);
-        \assert($minute >= 0 && $minute <= 59);
-        $nanoOfDay -= $minute * TimeUnit::NANOS_PER_MINUTE;
-
-        $second = \intdiv($nanoOfDay, TimeUnit::NANOS_PER_SECOND);
-        \assert($second >= 0 && $second <= 59);
-        $nano = $nanoOfDay - $second * TimeUnit::NANOS_PER_SECOND;
-        \assert($nano >= 0 && $nano <= 999999999);
-
-        return new self($hour, $minute, $second, $nano);
+        return self::createFromNanoOfDay($nanoOfDay);
     }
 
     /**
@@ -153,8 +163,6 @@ final readonly class LocalTime implements TemporalAccessor
      * @param int $nanos   Nanoseconds to add (can be negative).
      *
      * @return self A new LocalTime with the adjustment applied, or this instance if no change.
-     *
-     * @throws InvalidTime If the value is out of range.
      */
     public function plus(int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self
     {
@@ -169,7 +177,7 @@ final readonly class LocalTime implements TemporalAccessor
 
         $newNanoOfDay = self::normalizeNanoOfDay($this->toNanoOfDay() + $delta);
 
-        return self::ofNanoOfDay($newNanoOfDay);
+        return self::createFromNanoOfDay($newNanoOfDay);
     }
 
     /**
@@ -183,8 +191,6 @@ final readonly class LocalTime implements TemporalAccessor
      * @param int $nanos   Nanoseconds to subtract (can be negative).
      *
      * @return self A new LocalTime with the adjustment applied.
-     *
-     * @throws InvalidTime If the value is out of range.
      */
     public function minus(int $hours = 0, int $minutes = 0, int $seconds = 0, int $nanos = 0): self
     {
@@ -270,6 +276,18 @@ final readonly class LocalTime implements TemporalAccessor
         }
 
         return true;
+    }
+
+    /**
+     * @return array<int, TemporalField>
+     */
+    public static function requires(): array
+    {
+        return [
+            TemporalField::Hour,
+            TemporalField::Minute,
+            TemporalField::Second,
+        ];
     }
 
     /**
@@ -420,6 +438,27 @@ final readonly class LocalTime implements TemporalAccessor
         if ($value < 0 || $value > $max) {
             throw new InvalidTime(\sprintf('Invalid %s value: %d.', $name, $value));
         }
+    }
+
+    /**
+     * @param int<0,86399999999999> $nanoOfDay
+     */
+    private static function createFromNanoOfDay(int $nanoOfDay): self
+    {
+        $hour = \intdiv($nanoOfDay, TimeUnit::NANOS_PER_HOUR);
+        \assert($hour >= 0 && $hour <= 23);
+        $remaining = $nanoOfDay - ($hour * TimeUnit::NANOS_PER_HOUR);
+
+        $minute = \intdiv($remaining, TimeUnit::NANOS_PER_MINUTE);
+        \assert($minute >= 0 && $minute <= 59);
+        $remaining -= $minute * TimeUnit::NANOS_PER_MINUTE;
+
+        $second = \intdiv($remaining, TimeUnit::NANOS_PER_SECOND);
+        \assert($second >= 0 && $second <= 59);
+        $nano = $remaining - $second * TimeUnit::NANOS_PER_SECOND;
+        \assert($nano >= 0 && $nano <= 999_999_999);
+
+        return new self($hour, $minute, $second, $nano);
     }
 
     /**

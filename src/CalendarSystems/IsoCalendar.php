@@ -62,6 +62,7 @@ final class IsoCalendar
 
     public static function epochDayFromDate(int $year, int $month, int $day): int
     {
+        self::ensureValidMonth($month);
         $monthLength = self::monthLength($year, $month);
         if ($day < 1 || $day > $monthLength) {
             throw new \InvalidArgumentException('Invalid day: ' . $day . ' for month ' . $month);
@@ -74,6 +75,10 @@ final class IsoCalendar
         return $total - self::DAYS_0000_TO_1970;
     }
 
+    /**
+     * @phpstan-assert-if-true int<1,12> $month
+     * @phpstan-assert-if-true int<1,31> $day
+     */
     public static function isValidDate(int $year, int $month, int $day): bool
     {
         if ($month < 1 || $month > self::MONTHS_PER_YEAR) {
@@ -247,8 +252,6 @@ final class IsoCalendar
      */
     private static function monthLength(int $year, int $month): int
     {
-        self::ensureValidMonth($month);
-
         $index = $month - 1;
 
         return self::isLeapYear($year)
@@ -256,6 +259,9 @@ final class IsoCalendar
             : self::MONTH_LENGTHS[$index];
     }
 
+    /**
+     * @phpstan-assert int<1,12> $month
+     */
     private static function ensureValidMonth(int $month): void
     {
         if ($month < 1 || $month > self::MONTHS_PER_YEAR) {

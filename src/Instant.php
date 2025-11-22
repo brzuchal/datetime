@@ -62,12 +62,11 @@ final class Instant
 
     private static function floorMod(int $dividend, int $divisor): int
     {
-        $remainder = $dividend % $divisor;
-
-        if ($remainder < 0) {
-            $remainder += \abs($divisor);
+        $r = $dividend % $divisor;
+        if ((($r ^ $divisor) < 0) && $r !== 0) {
+            $r += $divisor;
         }
 
-        return $remainder;
+        return $r;
     }
 }

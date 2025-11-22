@@ -4,6 +4,7 @@ namespace Brzuchal\DateTime\Format\DurationFormatDefinition;
 
 use Brzuchal\DateTime\Duration;
 use Brzuchal\DateTime\Format\DurationFormatDefinition;
+use Brzuchal\DateTime\Format\Iso8601Parser;
 use Brzuchal\DateTime\InvalidDuration;
 
 final readonly class IsoStandardDurationFormatDefinition implements DurationFormatDefinition
@@ -13,84 +14,48 @@ final readonly class IsoStandardDurationFormatDefinition implements DurationForm
      */
     public function parse(string $text): Duration
     {
+        $components = Iso8601Parser::parse($text);
+
         if (
-            !preg_match(
-                '/^P
-                (?:(?P<years>\d+(?:[.,]\d+)?)Y)?
-                (?:(?P<months>\d+(?:[.,]\d+)?)M)?
-                (?:(?P<days>\d+(?:[.,]\d+)?)D)?
-                (?:T
-                    (?:(?P<hours>\d+(?:[.,]\d+)?)H)?
-                    (?:(?P<minutes>\d+(?:[.,]\d+)?)M)?
-                    (?:(?P<seconds>\d+(?:[.,]\d+)?)S)?
-                )?
-            $/x',
-                $text,
-                $matches,
-                \PREG_UNMATCHED_AS_NULL,
-            )
+            $components['years'] !== 0
+            || $components['months'] !== 0
+            || $components['days'] !== 0
         ) {
-            throw new InvalidDuration(sprintf('Invalid ISO 8601 duration string: %s', $text));
+            throw new InvalidDuration(sprintf('Duration string cannot contain date components: %s', $text));
         }
-
-        foreach (['years', 'months', 'days', 'hours', 'minutes'] as $component) {
-            $value = $matches[$component];
-            if ($value === null) {
-                continue;
-            }
-
-            if (\strpbrk($value, '.,') !== false) {
-                throw new InvalidDuration(\sprintf('Fractional %s component is not supported: %s', $component, $value));
-            }
-        }
-
-        [$seconds, $nanos] = self::parseSecondsAndNanos($matches['seconds'] ?? null);
 
         return new Duration(
-            years: (int) $matches['years'],
-            months: (int) $matches['months'],
-            days: (int) $matches['days'],
-            hours: (int) $matches['hours'],
-            minutes: (int) $matches['minutes'],
-            seconds: $seconds,
-            nanos: $nanos,
+            hours: $components['hours'],
+            minutes: $components['minutes'],
+            seconds: $components['seconds'],
+            nanos: $components['nanos'],
         );
     }
 
     public function format(Duration $duration): string
     {
-        $out = 'P';
-        if ($duration->years) {
-            $out .= $duration->years . 'Y';
+        $seconds = (string) $duration->seconds;
+        if ($duration->nanos > 0) {
+            $seconds .= '.' . \rtrim(\sprintf('%09d', $duration->nanos), '0');
         }
 
-        if ($duration->months) {
-            $out .= $duration->months . 'M';
+        $buffer = 'PT';
+
+        if ($duration->hours > 0) {
+            $buffer .= $duration->hours . 'H';
+        }
+        if ($duration->minutes > 0) {
+            $buffer .= $duration->minutes . 'M';
+        }
+        if ($duration->seconds > 0 || $duration->nanos > 0) {
+            $buffer .= $seconds . 'S';
         }
 
-        if ($duration->days) {
-            $out .= $duration->days . 'D';
+        if ($buffer === 'PT') {
+            return 'PT0S';
         }
 
-        $time = '';
-        if ($duration->hours) {
-            $time .= $duration->hours . 'H';
-        }
-
-        if ($duration->minutes) {
-            $time .= $duration->minutes . 'M';
-        }
-
-        if ($duration->seconds || $duration->nanos) {
-            $sec = (string) $duration->seconds;
-            if ($duration->nanos > 0) {
-                $sec .= '.' . \rtrim(\sprintf('%09d', $duration->nanos), '0');
-            }
-
-            $time .= $sec . 'S';
-        }
-
-        return $time ? $out . 'T' . $time : ($out === 'P' ? 'PT0S' : $out);
+        return $buffer;
     }
 
     /**

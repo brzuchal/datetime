@@ -7,6 +7,8 @@ use Brzuchal\DateTime\CalendarSystems\IsoEra;
 use Brzuchal\DateTime\Format\DateTimeFormat;
 use Brzuchal\DateTime\Format\DateTimeFormatter;
 use Brzuchal\DateTime\Format\InvalidInput;
+use Brzuchal\DateTime\Temporal\HandlesTemporalQueriesAndAdjustments;
+use Brzuchal\DateTime\Temporal\Temporal;
 use Brzuchal\DateTime\Temporal\TemporalAccessor;
 use Brzuchal\DateTime\Temporal\TemporalField;
 
@@ -23,8 +25,10 @@ use Brzuchal\DateTime\Temporal\TemporalField;
  * $tomorrow = $today->plusDays(1);
  * </code>
  */
-final class LocalDate implements TemporalAccessor
+final class LocalDate implements Temporal
 {
+    use HandlesTemporalQueriesAndAdjustments;
+
     public const string SERIALIZED_DATE_FORMAT = '%04d-%02d-%02d';
 
     /**
@@ -94,8 +98,8 @@ final class LocalDate implements TemporalAccessor
      * </code>
      *
      * @param int        $year  Year component.
-     * @param int<1, 12> $month Month of the year (1–12).
-     * @param int<1, 31> $day   Day of the month.
+     * @param int $month Month of the year (1–12).
+     * @param int $day   Day of the month.
      *
      * @throws InvalidDate When the date is not valid in the ISO calendar system.
      */
@@ -104,7 +108,6 @@ final class LocalDate implements TemporalAccessor
         int $month,
         int $day,
     ): self {
-        /** @phpstan-ignore-next-line staticMethod.alreadyNarrowedType reason: runtime validation must guard user-provided values */
         if (! IsoCalendar::isValidDate($year, $month, $day)) {
             throw new InvalidDate(\sprintf('Invalid date provided: %s-%s-%s.', $year, $month, $day));
         }
@@ -158,9 +161,9 @@ final class LocalDate implements TemporalAccessor
      * @throws InsufficientDateComponents If the TemporalAccessor does not have sufficient fields.
      * @throws InvalidDate If there is no valid conversion possible.
      */
-    public static function from(TemporalAccessor $accessor): self
+    public static function from(TemporalAccessor $accessor): static
     {
-        if (! $accessor->supports(TemporalField::Year, TemporalField::Month, TemporalField::Day)) {
+        if (! $accessor->supports(...self::requires())) {
             throw new InsufficientDateComponents(\sprintf('Insufficient fields for %s', self::class));
         }
 
@@ -203,7 +206,7 @@ final class LocalDate implements TemporalAccessor
      */
     public function plus(int $years = 0, int $months = 0, int $days = 0): self
     {
-        return $this->plusDuration(new Duration($years, $months, $days));
+        return $this->plusPeriod(new Period($years, $months, $days));
     }
 
     /**
@@ -217,61 +220,50 @@ final class LocalDate implements TemporalAccessor
      */
     public function minus(int $years = 0, int $months = 0, int $days = 0): self
     {
-        return $this->minusDuration(new Duration($years, $months, $days));
+        return $this->minusPeriod(new Period($years, $months, $days));
     }
 
     /**
-     * Adds a duration to the current date.
+     * Adds a period to the current date.
      *
-     * @param Duration $duration Duration composed of years, months, and days.
+     * @param Period $period Period composed of years, months, and days.
      *
      * @return self Adjusted date instance.
      */
-    public function plusDuration(Duration $duration): self
+    public function plusPeriod(Period $period): self
     {
-        $daysDelta = $duration->days
+        if ($period->isZero()) {
+            return $this;
+        }
+
+        $daysDelta = $period->days
             + IsoCalendar::yearsMonthsToDays(
                 year: $this->year,
                 month: $this->month,
                 day: $this->day,
-                years: $duration->years,
-                months: $duration->months,
-            )
-            + $duration->toTotalDays();
+                years: $period->years,
+                months: $period->months,
+            );
 
         return self::fromEpochDay($this->epochDay + $daysDelta);
     }
 
+
+
     /**
-     * Subtracts a duration from the current date.
+     * Subtracts a period from the current date.
      *
-     * @param Duration $duration Duration composed of years, months, and days.
+     * @param Period $period Period composed of years, months, and days.
      *
      * @return self Adjusted date instance.
      */
-    public function minusDuration(Duration $duration): self
+    public function minusPeriod(Period $period): self
     {
-        if (
-            $duration->years === 0
-            && $duration->months === 0
-            && $duration->days === 0
-            && $duration->hours === 0
-            && $duration->minutes === 0
-            && $duration->seconds === 0
-            && $duration->nanos === 0
-        ) {
+        if ($period->isZero()) {
             return $this;
         }
 
-        return $this->plusDuration(new Duration(
-            years: -$duration->years,
-            months: -$duration->months,
-            days: -$duration->days,
-            hours: -$duration->hours,
-            minutes: -$duration->minutes,
-            seconds: -$duration->seconds,
-            nanos: -$duration->nanos,
-        ));
+        return $this->plusPeriod($period->negated());
     }
 
     /**
@@ -346,7 +338,7 @@ final class LocalDate implements TemporalAccessor
             throw new \UnexpectedValueException(\sprintf('Serialized %s date is malformed.', self::class));
         }
 
-        if (! $fields->supports(TemporalField::Year, TemporalField::Month, TemporalField::Day)) {
+        if (! $fields->supports(...self::requires())) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s date is malformed.', self::class));
         }
 
@@ -365,12 +357,24 @@ final class LocalDate implements TemporalAccessor
             throw new \UnexpectedValueException(\sprintf('Serialized %s day must be between 1 and 31.', self::class));
         }
 
-        /** @phpstan-ignore-next-line staticMethod.alreadyNarrowedType reason: runtime validation must guard user-provided values */
+        /** @phpstan-ignore-next-line staticMethod.alreadyNarrowedType */
         if (! IsoCalendar::isValidDate($year, $month, $day)) {
             throw new \UnexpectedValueException(\sprintf('Serialized %s contains a date invalid for the ISO calendar system.', self::class));
         }
 
         self::__construct(year: $year, month: $month, day: $day);
+    }
+
+    /**
+     * @return array<int, TemporalField>
+     */
+    public static function requires(): array
+    {
+        return [
+            TemporalField::Year,
+            TemporalField::Month,
+            TemporalField::Day,
+        ];
     }
 
     // TemporalAccessor

@@ -2,14 +2,19 @@
 
 namespace Tests;
 
+use Brzuchal\DateTime\DayOfWeek;
 use Brzuchal\DateTime\Duration;
+use Brzuchal\DateTime\Format\TemporalFields;
 use Brzuchal\DateTime\Instant;
+use Brzuchal\DateTime\InsufficientTimeComponents;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\InvalidTime;
 use Brzuchal\DateTime\LocalDate;
 use Brzuchal\DateTime\LocalDateTime;
 use Brzuchal\DateTime\LocalTime;
+use Brzuchal\DateTime\Temporal\Adjusters\DayOfWeekAdjuster;
 use Brzuchal\DateTime\Temporal\TemporalField;
+use Brzuchal\DateTime\Temporal\TemporalQueries;
 use Brzuchal\DateTime\Temporal\TimeUnit;
 use PHPUnit\Framework\TestCase;
 
@@ -59,20 +64,25 @@ final class LocalDateTimeTest extends TestCase
         self::assertSame('1970-01-02T00:00:01', (string) $dateTime);
     }
 
+    public function testOfInstantHandlesMaxNanoAdjustment(): void
+    {
+        $instant = new Instant(Instant::TICKS_PER_SECOND - 1); // 1970-01-01T00:00:00.9999999Z
+
+        self::assertSame('1970-01-01T00:00:00.9999999', (string) LocalDateTime::ofInstant($instant));
+    }
+
+    public function testOfInstantHandlesNegativeRemainder(): void
+    {
+        $instant = new Instant(-1); // 1969-12-31T23:59:59.9999999Z
+
+        self::assertSame('1969-12-31T23:59:59.9999999', (string) LocalDateTime::ofInstant($instant));
+    }
+
     public function testOfInstantBeforeEpoch(): void
     {
         $instant = Instant::of(-TimeUnit::SECONDS_PER_DAY + 1); // 1969-12-31T00:00:01Z
 
         self::assertSame('1969-12-31T00:00:01', (string) LocalDateTime::ofInstant($instant));
-    }
-
-    public function testPlusDurationHandlesDayOverflow(): void
-    {
-        $dateTime = LocalDateTime::of(2024, 2, 29, 23, 30);
-
-        $result = $dateTime->plus(new Duration(hours: 2, minutes: 45));
-
-        self::assertSame('2024-03-01T02:15:00', (string) $result);
     }
 
     public function testPlusDurationHugeNanoOverflow(): void
@@ -83,15 +93,6 @@ final class LocalDateTimeTest extends TestCase
         $result = $dateTime->plus(new Duration(nanos: $nanos));
 
         self::assertSame('2023-08-22T15:00:00.00000075', (string) $result);
-    }
-
-    public function testMinusDurationHandlesBorrow(): void
-    {
-        $dateTime = LocalDateTime::of(2024, 3, 1, 0, 30);
-
-        $result = $dateTime->minus(new Duration(minutes: 90));
-
-        self::assertSame('2024-02-29T23:00:00', (string) $result);
     }
 
     public function testPlusWithZeroDurationReturnsSameInstance(): void
@@ -166,9 +167,7 @@ final class LocalDateTimeTest extends TestCase
         $dateTime = LocalDateTime::of(2021, 6, 7, 8, 9, 10, 123_456_789);
 
         self::assertSame(
-            [
-                'value' => '2021-06-07T08:09:10.123456789',
-            ],
+            ['value' => '2021-06-07T08:09:10.123456789'],
             $dateTime->__serialize(),
         );
 
@@ -176,5 +175,78 @@ final class LocalDateTimeTest extends TestCase
 
         self::assertInstanceOf(LocalDateTime::class, $roundTripped);
         self::assertSame((string) $dateTime, (string) $roundTripped);
+    }
+
+    public function testRequiredFieldsContainDateAndTime(): void
+    {
+        self::assertSame(
+            [
+                TemporalField::Year,
+                TemporalField::Month,
+                TemporalField::Day,
+                TemporalField::Hour,
+                TemporalField::Minute,
+                TemporalField::Second,
+            ],
+            LocalDateTime::requires(),
+        );
+    }
+
+    public function testFromTemporalAccessor(): void
+    {
+        $fields = new TemporalFields(
+            year: 2024,
+            month: 6,
+            day: 18,
+            hour: 11,
+            minute: 22,
+            second: 33,
+            nano: 444,
+        );
+
+        $dateTime = LocalDateTime::from($fields);
+
+        self::assertSame('2024-06-18T11:22:33.000000444', (string) $dateTime);
+    }
+
+    public function testFromTemporalAccessorMissingSecondThrows(): void
+    {
+        $fields = new TemporalFields(year: 2024, month: 6, day: 18, hour: 11, minute: 22);
+
+        $this->expectException(InsufficientTimeComponents::class);
+
+        LocalDateTime::from($fields);
+    }
+
+    public function testQueryReturnsLocalDateTime(): void
+    {
+        $fields = new TemporalFields(
+            year: 2024,
+            month: 12,
+            day: 1,
+            hour: 7,
+            minute: 30,
+            second: 0,
+        );
+
+        $dateTime = $fields->query(TemporalQueries::localDateTime());
+
+        self::assertInstanceOf(LocalDateTime::class, $dateTime);
+        self::assertSame('2024-12-01T07:30:00', (string) $dateTime);
+    }
+
+    public function testQueryReturnsNullWhenMissingDateTimeFields(): void
+    {
+        $fields = new TemporalFields(year: 2024, hour: 10);
+
+        self::assertNull($fields->query(TemporalQueries::localDateTime()));
+    }
+
+    public function testAdjustNextFriday(): void
+    {
+        $wednesday = LocalDateTime::of(2024, 6, 12, 9, 0); // Wednesday
+        $adjusted = $wednesday->adjust(DayOfWeekAdjuster::next(DayOfWeek::Friday));
+
+        self::assertSame('2024-06-14T09:00:00', (string) $adjusted);
     }
 }

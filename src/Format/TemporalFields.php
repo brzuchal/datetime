@@ -43,4 +43,9 @@ final readonly class TemporalFields implements TemporalAccessor
 
         return true;
     }
+
+    public function query(callable $query): mixed
+    {
+        return $query($this);
+    }
 }

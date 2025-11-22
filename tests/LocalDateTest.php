@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use Brzuchal\DateTime\DayOfWeek;
 use Brzuchal\DateTime\Duration;
+use Brzuchal\DateTime\Period;
 use Brzuchal\DateTime\Format\InvalidInput;
+use Brzuchal\DateTime\Format\TemporalFields;
+use Brzuchal\DateTime\InsufficientDateComponents;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
+use Brzuchal\DateTime\Temporal\Adjusters\DayOfWeekAdjuster;
 use Brzuchal\DateTime\Temporal\TemporalField;
+use Brzuchal\DateTime\Temporal\TemporalQueries;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
@@ -56,7 +62,9 @@ final class LocalDateTest extends TestCase
         self::assertSame(self::THURSDAY_ORD, $localDate->dayOfWeek);
     }
 
-    // TODO: extend with all args params and desired date (consider mutations passing leap years)
+    /**
+     * TODO: extend with all args params and desired date (consider mutations passing leap years)
+     */
     public function testPlusDays(): void
     {
         $initial = LocalDate::of(2023, 5, 10);
@@ -67,7 +75,9 @@ final class LocalDateTest extends TestCase
         self::assertSame(15, $result->day);
     }
 
-    // TODO: extend with all args params and desired date (consider mutations passing leap years)
+    /**
+     * TODO: extend with all args params and desired date (consider mutations passing leap years)
+     */
     public function testMinusDays(): void
     {
         $initial = LocalDate::of(2023, 5, 10);
@@ -119,40 +129,11 @@ final class LocalDateTest extends TestCase
         self::assertSame(23, $result->day);
     }
 
-    public function testAddDurationWithTimeComponents(): void
-    {
-        $initial = LocalDate::of(2023, 5, 10);
-        $result = $initial->plusDuration(new Duration(hours: 30));
-
-        self::assertSame(2023, $result->year);
-        self::assertSame(5, $result->month);
-        self::assertSame(11, $result->day);
-    }
-
-    public function testAddDurationWithSubDayTimeComponent(): void
-    {
-        $initial = LocalDate::of(2023, 5, 10);
-        $result = $initial->plusDuration(new Duration(hours: 12));
-
-        self::assertSame($initial->year, $result->year);
-        self::assertSame($initial->month, $result->month);
-        self::assertSame($initial->day, $result->day);
-    }
-
-    public function testSubtractDurationWithTimeComponents(): void
-    {
-        $initial = LocalDate::of(2023, 5, 10);
-        $result = $initial->minusDuration(new Duration(hours: 49));
-
-        self::assertSame(2023, $result->year);
-        self::assertSame(5, $result->month);
-        self::assertSame(8, $result->day);
-    }
 
     public function testAddMonthsSkipsYearZero(): void
     {
         $initial = LocalDate::of(-1, 12, 31);
-        $result = $initial->plusDuration(new Duration(months: 2));
+        $result = $initial->plusPeriod(new Period(months: 2));
 
         self::assertSame(1, $result->year);
     }
@@ -160,7 +141,7 @@ final class LocalDateTest extends TestCase
     public function testAddNegativeMonthsSkipsYearZero(): void
     {
         $initial = LocalDate::of(1, 1, 15);
-        $result = $initial->plusDuration(new Duration(months: -2));
+        $result = $initial->plusPeriod(new Period(months: -2));
 
         self::assertSame(-1, $result->year);
     }
@@ -353,13 +334,16 @@ final class LocalDateTest extends TestCase
         }
 
         $date = LocalDate::parse($startDate);
-        $result = $date->plusDuration(new Duration($years, $months, $days));
+        $result = $date->plusPeriod(new Period($years, $months, $days));
 
         self::assertSame((int) $expectedYear, $result->year);
         self::assertSame((int) $expectedMonth, $result->month);
         self::assertSame((int) $expectedDay, $result->day);
     }
 
+    /**
+     * @return array<int, array{0: string, 1: int, 2: int, 3: int, 4: string}>
+     */
     public static function dateAdditionProvider(): array
     {
         return [
@@ -404,6 +388,71 @@ final class LocalDateTest extends TestCase
         self::assertSame(14, $restored->day);
     }
 
+    public function testRequiredFieldsListsYearMonthDay(): void
+    {
+        self::assertSame(
+            [TemporalField::Year, TemporalField::Month, TemporalField::Day],
+            LocalDate::requires(),
+        );
+    }
+
+    public function testFromTemporalAccessor(): void
+    {
+        $fields = new TemporalFields(year: 2024, month: 5, day: 17);
+
+        $date = LocalDate::from($fields);
+
+        self::assertSame(2024, $date->year);
+        self::assertSame(5, $date->month);
+        self::assertSame(17, $date->day);
+    }
+
+    public function testFromTemporalAccessorMissingFieldThrows(): void
+    {
+        $fields = new TemporalFields(year: 2024, month: 5);
+
+        $this->expectException(InsufficientDateComponents::class);
+
+        LocalDate::from($fields);
+    }
+
+    public function testQueryReturnsLocalDate(): void
+    {
+        $fields = new TemporalFields(year: 2024, month: 11, day: 5);
+
+        $date = $fields->query(TemporalQueries::localDate());
+
+        self::assertInstanceOf(LocalDate::class, $date);
+        self::assertSame(2024, $date->year);
+        self::assertSame(11, $date->month);
+        self::assertSame(5, $date->day);
+    }
+
+    public function testQueryReturnsNullWhenMissingFields(): void
+    {
+        $fields = new TemporalFields(year: 2024);
+
+        self::assertNull($fields->query(TemporalQueries::localDate()));
+    }
+
+    public function testAdjustNextOrSameMonday(): void
+    {
+        $friday = LocalDate::of(2024, 6, 14); // Friday
+        $adjusted = $friday->adjust(DayOfWeekAdjuster::nextOrSame(DayOfWeek::Monday));
+
+        self::assertSame(2024, $adjusted->year);
+        self::assertSame(6, $adjusted->month);
+        self::assertSame(17, $adjusted->day);
+    }
+
+    public function testAdjustNextMondayStrict(): void
+    {
+        $monday = LocalDate::of(2024, 6, 17);
+        $adjusted = $monday->adjust(DayOfWeekAdjuster::next(DayOfWeek::Monday));
+
+        self::assertSame('2024-06-24', (string) $adjusted);
+    }
+
     public function testUnserializeRejectsInvalidIsoPayload(): void
     {
         $date = (new \ReflectionClass(LocalDate::class))->newInstanceWithoutConstructor();
@@ -431,4 +480,102 @@ final class LocalDateTest extends TestCase
         self::assertTrue($first->equalTo(LocalDate::of(2024, 7, 14)));
         self::assertFalse($first->equalTo(LocalDate::of(2024, 7, 15)));
     }
+
+    // Period integration tests
+
+    public function testPlusPeriodAddsYearsMonthsDays(): void
+    {
+        $date = LocalDate::of(2025, 1, 15);
+        $period = Period::of(years: 1, months: 2, days: 10);
+
+        $result = $date->plusPeriod($period);
+
+        self::assertSame(2026, $result->year);
+        self::assertSame(3, $result->month);
+        self::assertSame(25, $result->day);
+    }
+
+    public function testPlusPeriodWithZeroPeriodReturnsSameInstance(): void
+    {
+        $date = LocalDate::of(2025, 1, 15);
+        $period = Period::zero();
+
+        $result = $date->plusPeriod($period);
+
+        self::assertSame($date, $result);
+    }
+
+    public function testPlusPeriodHandlesMonthEndOverflow(): void
+    {
+        $date = LocalDate::of(2025, 1, 31);
+        $period = Period::ofMonths(1);
+
+        $result = $date->plusPeriod($period);
+
+        // January 31 + 1 month → February 28 (not a leap year)
+        self::assertSame(2025, $result->year);
+        self::assertSame(2, $result->month);
+        self::assertSame(28, $result->day);
+    }
+
+    public function testPlusPeriodWithLeapYearTransition(): void
+    {
+        $date = LocalDate::of(2024, 2, 29);  // leap year
+        $period = Period::ofYears(1);
+
+        $result = $date->plusPeriod($period);
+
+        // February 29, 2024 + 1 year → February 28, 2025 (not a leap year)
+        self::assertSame(2025, $result->year);
+        self::assertSame(2, $result->month);
+        self::assertSame(28, $result->day);
+    }
+
+    public function testMinusPeriodSubtractsYearsMonthsDays(): void
+    {
+        $date = LocalDate::of(2026, 3, 25);
+        $period = Period::of(years: 1, months: 2, days: 10);
+
+        $result = $date->minusPeriod($period);
+
+        self::assertSame(2025, $result->year);
+        self::assertSame(1, $result->month);
+        self::assertSame(15, $result->day);
+    }
+
+    public function testMinusPeriodWithZeroPeriodReturnsSameInstance(): void
+    {
+        $date = LocalDate::of(2025, 1, 15);
+        $period = Period::zero();
+
+        $result = $date->minusPeriod($period);
+
+        self::assertSame($date, $result);
+    }
+
+    public function testPlusPeriodCrossesYearBoundary(): void
+    {
+        $date = LocalDate::of(2024, 12, 15);
+        $period = Period::of(months: 2, days: 20);
+
+        $result = $date->plusPeriod($period);
+
+        // December 15 + 2 months = February 15, then + 20 days = March 7
+        self::assertSame(2025, $result->year);
+        self::assertSame(3, $result->month);
+        self::assertSame(7, $result->day);
+    }
+
+    public function testMinusPeriodCrossesYearBoundary(): void
+    {
+        $date = LocalDate::of(2025, 1, 10);
+        $period = Period::of(months: 2, days: 15);
+
+        $result = $date->minusPeriod($period);
+
+        self::assertSame(2024, $result->year);
+        self::assertSame(10, $result->month);
+        self::assertSame(26, $result->day);
+    }
 }
+
