@@ -46,7 +46,7 @@ final class ZoneRulesProvider
         // Get POSIX rule for future transitions
         $posixRule = $tzif->posixString ?? '';
 
-        return $self::$cache[$zoneId] = new ZoneRules(
+        return self::$cache[$zoneId] = new ZoneRules(
             zoneId: $zoneId,
             cutoffTimestamp: $cutoffTimestamp,
             posixRule: $posixRule,
