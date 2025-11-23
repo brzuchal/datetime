@@ -13,16 +13,16 @@ use Stringable;
 final class ZoneOffset implements Stringable
 {
     /** @var int Minimum offset in seconds (-18 hours) */
-    public const MIN_SECONDS = -64800;
+    public const int MIN_SECONDS = -64800;
 
     /** @var int Maximum offset in seconds (+18 hours) */
-    public const MAX_SECONDS = 64800;
+    public const int MAX_SECONDS = 64800;
 
     /** @var array<int, self> Cache for common offsets */
     private static array $cache = [];
 
     /** @var self UTC offset (zero) */
-    private static ?self $utc = null;
+    private static self|null $utc = null;
 
     /**
      * @param int $totalSeconds Total offset in seconds (-64800 to +64800)
