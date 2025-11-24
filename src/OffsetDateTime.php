@@ -3,6 +3,8 @@
 namespace Brzuchal\DateTime;
 
 use Brzuchal\DateTime\Temporal\Temporal;
+use Brzuchal\DateTime\Temporal\TemporalAccessor;
+use Brzuchal\DateTime\Temporal\TemporalField;
 
 /**
  * Date-time with a fixed UTC offset (no timezone/DST awareness).
@@ -21,12 +23,27 @@ use Brzuchal\DateTime\Temporal\Temporal;
  * echo $odt; // "2024-03-15T14:30:00+02:00"
  * ```
  */
-final readonly class OffsetDateTime implements \Stringable
+final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
 {
     private function __construct(
         public LocalDateTime $dateTime,
         public ZoneOffset $offset,
     ) {}
+
+    public function get(TemporalField $field): int|null
+    {
+        return $this->dateTime->get($field);
+    }
+
+    public function supports(TemporalField ...$fields): bool
+    {
+        return $this->dateTime->supports(...$fields);
+    }
+
+    public function query(callable $query): mixed
+    {
+        return $query($this);
+    }
 
     /**
      * Create OffsetDateTime from components.
@@ -67,25 +84,11 @@ final readonly class OffsetDateTime implements \Stringable
      */
     public static function ofInstant(Instant $instant, ZoneOffset $offset): self
     {
-        $localEpochSecond = $instant->epochSecond + $offset->totalSeconds;
+        // Shift the instant by the offset to get "local" instant
+        $shiftedTicks = $instant->ticks + ($offset->totalSeconds * Instant::TICKS_PER_SECOND);
+        $shiftedInstant = new Instant($shiftedTicks);
         
-        $year = (int) \gmdate('Y', $localEpochSecond);
-        $month = (int) \gmdate('n', $localEpochSecond);
-        $day = (int) \gmdate('j', $localEpochSecond);
-        $hour = (int) \gmdate('G', $localEpochSecond);
-        $minute = (int) \gmdate('i', $localEpochSecond);
-        $second = (int) \gmdate('s', $localEpochSecond);
-        $nano = $instant->nanoAdjustment;
-        
-        // Assert ranges for PHPStan
-        \assert($month >= 1 && $month <= 12);
-        \assert($day >= 1 && $day <= 31);
-        \assert($hour >= 0 && $hour <= 23);
-        \assert($minute >= 0 && $minute <= 59);
-        \assert($second >= 0 && $second <= 59);
-        \assert($nano >= 0 && $nano <= 999999999);
-        
-        $dateTime = LocalDateTime::of($year, $month, $day, $hour, $minute, $second, $nano);
+        $dateTime = LocalDateTime::ofInstant($shiftedInstant);
 
         return new self($dateTime, $offset);
     }
@@ -99,8 +102,8 @@ final readonly class OffsetDateTime implements \Stringable
         
         if ($offset === null) {
             // Use system timezone's current offset
-            $systemOffset = (int) \date('Z', $instant->epochSecond);
-            $offset = ZoneOffset::ofTotalSeconds($systemOffset);
+            $offsetSeconds = ZoneId::systemDefault()->getRules()->getOffsetForTimestamp($instant->epochSecond);
+            $offset = ZoneOffset::ofTotalSeconds($offsetSeconds);
         }
 
         return self::ofInstant($instant, $offset);
@@ -111,23 +114,16 @@ final readonly class OffsetDateTime implements \Stringable
      */
     public function toInstant(): Instant
     {
-        // Get local timestamp and subtract offset to get UTC
-        $localTs = \mktime(
-            $this->dateTime->hour,
-            $this->dateTime->minute,
-            $this->dateTime->second,
-            $this->dateTime->month,
-            $this->dateTime->day,
-            $this->dateTime->year,
-        );
+        $epochDay = $this->dateTime->date->epochDay;
+        $secondOfDay = $this->dateTime->time->toSecondOfDay();
+        $epochSecond = $epochDay * 86400 + $secondOfDay;
+        
+        $utcEpochSecond = $epochSecond - $this->offset->totalSeconds;
+        
+        // Calculate ticks (1 tick = 100ns)
+        $ticks = $utcEpochSecond * 10_000_000 + \intdiv($this->dateTime->nano, 100);
 
-        if ($localTs === false) {
-            throw new \RuntimeException('Invalid date/time');
-        }
-
-        $utcEpochSecond = $localTs - $this->offset->totalSeconds;
-
-        return Instant::of($utcEpochSecond);
+        return new Instant($ticks);
     }
 
     /**
@@ -160,9 +156,7 @@ final readonly class OffsetDateTime implements \Stringable
             return $this;
         }
 
-        $instant = $this->toInstant();
-
-        return self::ofInstant($instant, $newOffset);
+        return self::ofInstant($this->toInstant(), $newOffset);
     }
 
     /**

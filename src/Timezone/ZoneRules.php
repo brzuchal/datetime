@@ -118,17 +118,24 @@ final class ZoneRules
     private function computePosixOffset(int $utcTimestamp): int
     {
         // Extract year from UTC timestamp
-        $year = (int) \gmdate('Y', $utcTimestamp);
+        $epochDay = \intdiv($utcTimestamp, 86400);
+        if ($utcTimestamp < 0 && $utcTimestamp % 86400 !== 0) {
+            $epochDay--;
+        }
+        $dateParts = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::dateFromEpochDay($epochDay);
+        $year = $dateParts[0];
         
         $parts = \explode(',', $this->posixRule);
+        $prefix = $parts[0];
+        $parsed = $this->parsePrefix($prefix);
+        $baseOffsetSec = $parsed['baseOffsetSec'];
 
         if (\count($parts) < 3) {
-            return 0; // Invalid POSIX rule
+            // No DST rules specified, return standard offset
+            return $baseOffsetSec;
         }
 
         [$prefix, $startSpec, $endSpec] = $parts;
-        $parsed = $this->parsePrefix($prefix);
-        $baseOffsetSec = $parsed['baseOffsetSec'];
         $dstOffsetSec = $parsed['dstOffsetSec'];
 
         $dstStartUtc = $this->calcTransitionUtc($year, $startSpec, $baseOffsetSec, $dstOffsetSec, false);
@@ -219,13 +226,12 @@ final class ZoneRules
         int $hour,
         int $offsetSec,
     ): int {
-        // Use mktime to create local timestamp, then subtract offset
-        $localTs = \mktime($hour, 0, 0, $month, $day, $year);
+        $epochDay = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::epochDayFromDate($year, $month, $day);
+        // Hour only, minute/second 0
+        $secondOfDay = $hour * 3600;
         
-        if ($localTs === false) {
-            return 0; // Fallback for invalid date
-        }
-
+        $localTs = $epochDay * 86400 + $secondOfDay;
+        
         return $localTs - $offsetSec;
     }
 
@@ -235,15 +241,20 @@ final class ZoneRules
 
         // Start from last day and work backwards
         for ($day = $daysInMonth; $day >= 1; $day--) {
-            $ts = \mktime(0, 0, 0, $month, $day, $year);
+            $epochDay = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::epochDayFromDate($year, $month, $day);
             
-            if ($ts === false) {
-                continue; // Skip invalid dates
+            // 1970-01-01 was a Thursday => offset=3 => 0 => Monday, 6 => Sunday
+            $dayOfWeekIndex = ($epochDay + 3) % 7;
+            if ($dayOfWeekIndex < 0) {
+                $dayOfWeekIndex += 7;
             }
             
-            $dow = (int) \date('N', $ts);  // 1 (Monday) to 7 (Sunday)
+            // LocalDate uses 0 (Monday) to 6 (Sunday)
+            // POSIX TZ uses 0 (Sunday) to 6 (Saturday)
+            // Convert LocalDate dow to POSIX dow
+            $posixDow = ($dayOfWeekIndex + 1) % 7;
 
-            if ($dow === $wantedDow) {
+            if ($posixDow === $wantedDow) {
                 return $day;
             }
         }
