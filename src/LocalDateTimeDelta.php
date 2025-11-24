@@ -87,7 +87,7 @@ final readonly class LocalDateTimeDelta implements Stringable
         // User agreed to remove multipliedBy from Period.
         // So Delta::multipliedBy might only make sense for Duration part?
         // Or we just multiply fields of Period manually here.
-        
+
         return new self(
             new Period(
                 $this->period->years * $scalar,
@@ -109,17 +109,17 @@ final readonly class LocalDateTimeDelta implements Stringable
 
         // If Period is zero (P0D), we might want to omit it if Duration is not zero.
         // But Period::__toString() returns P0D for zero.
-        
+
         // Logic to combine:
         // Period: P1Y2M3D
         // Duration: PT4H5M6S
         // Result: P1Y2M3DT4H5M6S
-        
+
         $p = \substr($periodString, 1); // remove leading P
         if ($this->period->isZero()) {
             $p = '';
         }
-        
+
         $d = \substr($durationString, 2); // remove leading PT
         if ($durationString === 'PT0S') {
             $d = '';
@@ -128,12 +128,12 @@ final readonly class LocalDateTimeDelta implements Stringable
         if ($p === '' && $d === '') {
             return 'PT0S';
         }
-        
+
         $out = 'P' . $p;
         if ($d !== '') {
             $out .= 'T' . $d;
         }
-        
+
         return $out;
     }
 }

@@ -11,7 +11,7 @@ namespace Brzuchal\DateTime\Timezone;
  *   - abbreviations: an array of raw abbreviation data (usually just one string)
  *   - leapSecondData: optional leap second info
  *   - posixString: optional POSIX-style TZ string from the file trailer
- * 
+ *
  * @internal This class is not part of the public API.
  */
 final readonly class TzifFile

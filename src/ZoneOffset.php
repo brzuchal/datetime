@@ -12,10 +12,8 @@ use Stringable;
  */
 final class ZoneOffset implements Stringable
 {
-    /** @var int Minimum offset in seconds (-18 hours) */
     public const int MIN_SECONDS = -64800;
 
-    /** @var int Maximum offset in seconds (+18 hours) */
     public const int MAX_SECONDS = 64800;
 
     /** @var array<int, self> Cache for common offsets */
@@ -26,6 +24,7 @@ final class ZoneOffset implements Stringable
 
     /**
      * @param int $totalSeconds Total offset in seconds (-64800 to +64800)
+     * @throws InvalidOffset
      */
     private function __construct(
         public readonly int $totalSeconds,
@@ -35,7 +34,7 @@ final class ZoneOffset implements Stringable
                 'Zone offset not in valid range: %d seconds (must be between %d and %d)',
                 $totalSeconds,
                 self::MIN_SECONDS,
-                self::MAX_SECONDS
+                self::MAX_SECONDS,
             ));
         }
     }
@@ -45,7 +44,7 @@ final class ZoneOffset implements Stringable
      *
      * @param int $totalSeconds The total time-zone offset in seconds, from -64800 to +64800
      * @return self The ZoneOffset
-     * @throws InvalidOffset If the offset is not in the required range
+     * @throws InvalidOffset If the offset is not in the required range.
      */
     public static function ofTotalSeconds(int $totalSeconds): self
     {
@@ -67,11 +66,11 @@ final class ZoneOffset implements Stringable
     /**
      * Obtains an instance of ZoneOffset using an offset in hours, minutes and seconds.
      *
-     * @param int $hours The time-zone offset in hours, from -18 to +18
+     * @param int $hours   The time-zone offset in hours, from -18 to +18
      * @param int $minutes The time-zone offset in minutes, from 0 to ±59
      * @param int $seconds The time-zone offset in seconds, from 0 to ±59
      * @return self The ZoneOffset
-     * @throws InvalidOffset If the offset is not in the required range
+     * @throws InvalidOffset If the offset is not in the required range.
      */
     public static function of(int $hours, int $minutes = 0, int $seconds = 0): self
     {
@@ -109,7 +108,7 @@ final class ZoneOffset implements Stringable
      *
      * @param string $offsetId The offset ID, not null
      * @return self The ZoneOffset
-     * @throws InvalidOffset If the offset ID is invalid
+     * @throws InvalidOffset If the offset ID is invalid.
      */
     public static function parse(string $offsetId): self
     {

@@ -7,7 +7,7 @@ use Brzuchal\DateTime\Timezone\ZoneRulesProvider;
 
 /**
  * IANA timezone identifier (e.g., "Europe/Warsaw", "America/New_York").
- * 
+ *
  * Immutable wrapper that lazily loads {@see ZoneRules} from {@see ZoneRulesProvider}.
  */
 final class ZoneId implements \Stringable
@@ -24,8 +24,8 @@ final class ZoneId implements \Stringable
 
     /**
      * Get ZoneId for an IANA timezone identifier.
-     * 
-     * @throws InvalidTimezone If timezone is not found
+     *
+     * @throws InvalidTimezone If timezone is not found.
      */
     public static function of(string $zoneId): self
     {
@@ -45,7 +45,7 @@ final class ZoneId implements \Stringable
 
     /**
      * Get system default timezone.
-     * 
+     *
      * Uses PHP's date_default_timezone_get().
      */
     public static function systemDefault(): self
@@ -60,7 +60,7 @@ final class ZoneId implements \Stringable
 
     /**
      * Get the timezone rules for this zone.
-     * 
+     *
      * Lazy-loaded from {@see ZoneRulesProvider}.
      */
     public function getRules(): ZoneRules

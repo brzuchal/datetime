@@ -8,15 +8,15 @@ use Brzuchal\DateTime\Temporal\TemporalField;
 
 /**
  * Date-time with a fixed UTC offset (no timezone/DST awareness).
- * 
+ *
  * Combines {@see LocalDateTime} with a fixed {@see ZoneOffset}.
  * Unlike {@see ZonedDateTime}, the offset never changes (no DST transitions).
- * 
+ *
  * Use cases:
  * - Storing timestamps with explicit offset
  * - APIs that work with ISO-8601 offset date-times
  * - When DST rules are not needed
- * 
+ *
  * Example:
  * ```php
  * $odt = OffsetDateTime::of(2024, 3, 15, 14, 30, 0, 0, ZoneOffset::of(2, 0));
@@ -87,7 +87,7 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
         // Shift the instant by the offset to get "local" instant
         $shiftedTicks = $instant->ticks + ($offset->totalSeconds * Instant::TICKS_PER_SECOND);
         $shiftedInstant = new Instant($shiftedTicks);
-        
+
         $dateTime = LocalDateTime::ofInstant($shiftedInstant);
 
         return new self($dateTime, $offset);
@@ -99,7 +99,7 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
     public static function now(ZoneOffset|null $offset = null): self
     {
         $instant = Instant::now();
-        
+
         if ($offset === null) {
             // Use system timezone's current offset
             $offsetSeconds = ZoneId::systemDefault()->getRules()->getOffsetForTimestamp($instant->epochSecond);
@@ -117,9 +117,9 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
         $epochDay = $this->dateTime->date->epochDay;
         $secondOfDay = $this->dateTime->time->toSecondOfDay();
         $epochSecond = $epochDay * 86400 + $secondOfDay;
-        
+
         $utcEpochSecond = $epochSecond - $this->offset->totalSeconds;
-        
+
         // Calculate ticks (1 tick = 100ns)
         $ticks = $utcEpochSecond * 10_000_000 + \intdiv($this->dateTime->nano, 100);
 
@@ -128,7 +128,7 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
 
     /**
      * Get epoch second (for backward compatibility and comparisons).
-     * 
+     *
      * @deprecated Use toInstant()->epochSecond instead
      */
     public function toEpochSecond(): int
@@ -138,14 +138,14 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
 
     /**
      * Change offset while keeping the same instant (UTC timestamp).
-     * 
+     *
      * The local date-time will adjust accordingly.
-     * 
+     *
      * Example:
      * ```php
      * $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
      * // 2024-03-15T14:00:00+02:00
-     * 
+     *
      * $odt2 = $odt1->withOffsetSameInstant(ZoneOffset::of(5, 0));
      * // 2024-03-15T17:00:00+05:00 (same instant, different local time)
      * ```
@@ -161,14 +161,14 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
 
     /**
      * Change offset while keeping the same local date-time.
-     * 
+     *
      * The instant (UTC timestamp) will change accordingly.
-     * 
+     *
      * Example:
      * ```php
      * $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
      * // 2024-03-15T14:00:00+02:00
-     * 
+     *
      * $odt2 = $odt1->withOffsetSameLocal(ZoneOffset::of(5, 0));
      * // 2024-03-15T14:00:00+05:00 (same local time, different instant)
      * ```
@@ -192,7 +192,7 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
 
     /**
      * Check equality with another OffsetDateTime.
-     * 
+     *
      * Two OffsetDateTimes are equal if they represent the same instant
      * (same UTC timestamp), regardless of offset.
      */

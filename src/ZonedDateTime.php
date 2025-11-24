@@ -7,10 +7,10 @@ use Brzuchal\DateTime\Temporal\TemporalField;
 
 /**
  * Date-time with a timezone in the ISO-8601 calendar system.
- * 
+ *
  * Combines {@see LocalDateTime} with {@see ZoneId}, providing full DST awareness.
  * Unlike {@see OffsetDateTime}, the offset can change over time due to DST transitions.
- * 
+ *
  * Gap and Overlap resolution:
  * - **Gap**: Local time doesn't exist (clocks move forward, e.g., 02:30 → 03:00)
  *   - Default: `SHIFT_FORWARD` - add gap duration
@@ -18,7 +18,7 @@ use Brzuchal\DateTime\Temporal\TemporalField;
  * - **Overlap**: Local time exists twice (clocks move backward, e.g., 02:30 occurs twice)
  *   - Default: `PREFER_EARLIER` - use earlier offset (DST)
  *   - Alternative: `PREFER_LATER` - use later offset (standard time)
- * 
+ *
  * Example:
  * ```php
  * $zdt = ZonedDateTime::of(2024, 3, 15, 14, 30, 0, 0, ZoneId::of('Europe/Warsaw'));
@@ -57,6 +57,9 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
      * @param int<0, 59> $minute
      * @param int<0, 59> $second
      * @param int<0, 999999999> $nano
+     *
+     * @throws InvalidDate
+     * @throws InvalidTime
      */
     public static function of(
         int $year,
@@ -76,12 +79,7 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
 
     /**
      * Create ZonedDateTime from LocalDateTime and ZoneId.
-     * 
-     * Resolves gaps (SHIFT_FORWARD) and overlaps (PREFER_EARLIER) automatically.
-     */
-    /**
-     * Create ZonedDateTime from LocalDateTime and ZoneId.
-     * 
+     *
      * Resolves gaps (SHIFT_FORWARD) and overlaps (PREFER_EARLIER) automatically.
      */
     public static function ofLocal(LocalDateTime $dateTime, ZoneId $zone): self
@@ -94,10 +92,10 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
         // Get offset for this approximate time
         // This gives us a rough estimate - may need refinement for DST boundaries
         $offsetSeconds = $zone->getOffsetForTimestamp($roughUtcTimestamp);
-        
+
         // Correct the UTC timestamp: local time - offset = UTC
         $correctedUtcTimestamp = $roughUtcTimestamp - $offsetSeconds;
-        
+
         // Get the actual offset for the corrected UTC time
         $actualOffsetSeconds = $zone->getOffsetForTimestamp($correctedUtcTimestamp);
         $offset = ZoneOffset::ofTotalSeconds($actualOffsetSeconds);
@@ -138,9 +136,9 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
         $epochDay = $this->dateTime->date->epochDay;
         $secondOfDay = $this->dateTime->time->toSecondOfDay();
         $epochSecond = $epochDay * 86400 + $secondOfDay;
-        
+
         $utcEpochSecond = $epochSecond - $this->offset->totalSeconds;
-        
+
         // Calculate ticks (1 tick = 100ns)
         $ticks = $utcEpochSecond * 10_000_000 + \intdiv($this->dateTime->nano, 100);
 
@@ -157,14 +155,14 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
 
     /**
      * Change timezone while keeping the same instant (UTC timestamp).
-     * 
+     *
      * The local date-time will adjust accordingly.
-     * 
+     *
      * Example:
      * ```php
      * $warsaw = ZonedDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneId::of('Europe/Warsaw'));
      * // 2024-03-15T14:00:00+01:00[Europe/Warsaw]
-     * 
+     *
      * $tokyo = $warsaw->withZoneSameInstant(ZoneId::of('Asia/Tokyo'));
      * // 2024-03-15T22:00:00+09:00[Asia/Tokyo] (same instant, different local time)
      * ```
@@ -182,14 +180,14 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
 
     /**
      * Change timezone while keeping the same local date-time.
-     * 
+     *
      * The instant (UTC timestamp) will change accordingly.
-     * 
+     *
      * Example:
      * ```php
      * $warsaw = ZonedDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneId::of('Europe/Warsaw'));
      * // 2024-03-15T14:00:00+01:00[Europe/Warsaw]
-     * 
+     *
      * $tokyo = $warsaw->withZoneSameLocal(ZoneId::of('Asia/Tokyo'));
      * // 2024-03-15T14:00:00+09:00[Asia/Tokyo] (same local time, different instant)
      * ```
@@ -213,7 +211,7 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
 
     /**
      * Check equality with another ZonedDateTime.
-     * 
+     *
      * Two ZonedDateTimes are equal if they represent the same instant
      * (same UTC timestamp), regardless of zone.
      */

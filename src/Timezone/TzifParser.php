@@ -6,7 +6,7 @@ use Brzuchal\DateTime\InvalidTimezone;
 
 /**
  * Parser for TZif binary timezone files (RFC 9636).
- * 
+ *
  * @internal This class is not part of the public API.
  */
 final class TzifParser
@@ -15,19 +15,24 @@ final class TzifParser
     private const int HEADER_LEN = 44; // V1 header size in bytes
 
     /**
-     * Reads a TZif file from disk and parses it.
+     * Reads a TZif file from the disk and parses it.
+     *
+     * @throws InvalidTimezone
      */
     public function parseFile(string $filename): TzifFile
     {
         $data = @\file_get_contents($filename);
         if ($data === false) {
-            throw new InvalidTimezone("Cannot read file: $filename");
+            throw new InvalidTimezone(\sprintf('Cannot read file: %s', $filename));
         }
+
         return $this->parseData($data);
     }
 
     /**
      * Parses the raw binary data from a TZif file (any version).
+     *
+     * @throws InvalidTimezone
      */
     public function parseData(string $data): TzifFile
     {
@@ -61,7 +66,7 @@ final class TzifParser
             leapCnt: $v1LeapCnt,
             ttisstdCnt: $v1TtisstdCnt,
             ttisutCnt: $v1TtisutCnt,
-            is32bit: true
+            is32bit: true,
         );
         $offset = $blockV1['newOffset'];
 
@@ -72,12 +77,13 @@ final class TzifParser
         $finalLeapData = $blockV1['leaps'];
         $posixString = null;
 
-        // 3) If version is not '\0', parse the second (V2, 64-bit) section
+        // 3) If a version is not '\0', parse the second (V2, 64-bit) section
         if ($isV2Plus) {
             // read the second header
             if (\strlen($data) < $offset + self::HEADER_LEN) {
                 throw new InvalidTimezone('Data too short for second TZif header.');
             }
+
             $header2 = $this->parseHeaderV1(\substr($data, $offset, self::HEADER_LEN));
             $offset += self::HEADER_LEN;
 
@@ -98,7 +104,7 @@ final class TzifParser
                 leapCnt: $v2LeapCnt,
                 ttisstdCnt: $v2TtisstdCnt,
                 ttisutCnt: $v2TtisutCnt,
-                is32bit: false
+                is32bit: false,
             );
             $offset = $blockV2['newOffset'];
 
@@ -137,15 +143,17 @@ final class TzifParser
 
     /**
      * Parses a 44-byte header (for both V1 and V2+).
-     * 
+     *
      * @return array{version:string,ttisutcnt:int,ttisstdcnt:int,leapcnt:int,timecnt:int,typecnt:int,charcnt:int}
+     * @throws InvalidTimezone
      */
     private function parseHeaderV1(string $rawHeader): array
     {
         $magic = \substr($rawHeader, 0, 4);
         if ($magic !== self::TZ_MAGIC) {
-            throw new InvalidTimezone('Invalid TZif magic: ' . $magic);
+            throw new InvalidTimezone(\sprintf('Invalid TZif magic: %s', $magic));
         }
+
         // version byte at [4]
         $versionByte = $rawHeader[4];
 
@@ -167,7 +175,7 @@ final class TzifParser
 
     /**
      * Parse the main section of transitions, TTInfo, abbreviations, leaps, etc.
-     * 
+     *
      * @return array{types:array<int,TzifTypeInfo>,transitions:array<int,TzifTransition>,abbrevs:array<int,string>,leaps:array<int,array{timestamp:string,corr:int}>,newOffset:int}
      */
     private function parseSection(
@@ -179,9 +187,8 @@ final class TzifParser
         int $leapCnt,
         int $ttisstdCnt,
         int $ttisutCnt,
-        bool $is32bit
-    ): array
-    {
+        bool $is32bit,
+    ): array {
         $offset = $startOffset;
 
         // 1) Transition timestamps
@@ -199,8 +206,8 @@ final class TzifParser
             $rawTypes = \substr($data, $offset, $timeCnt);
             $offset += $timeCnt;
             /** @var array<int,int> $unpacked */
-            $unpacked = \unpack("C{$timeCnt}", $rawTypes);
-            $transitionTypes = array_values($unpacked);
+            $unpacked = \unpack(\sprintf('C%s', $timeCnt), $rawTypes);
+            $transitionTypes = \array_values($unpacked);
         }
 
         // 3) TTInfo: each is 6 bytes
@@ -215,15 +222,16 @@ final class TzifParser
             // convert gmtoff to signed 32-bit (handle two's complement)
             $gmtoff = $tmp['gmtoff'];
             if ($gmtoff & 0x80000000) {
-                $gmtoff = $gmtoff - 0x100000000;
+                $gmtoff -= 0x100000000;
             }
+
             $isdst = ($tmp['isdst'] !== 0);
             $abbrIndex = $tmp['abbrind'];
 
             // placeholders for isStd and isUt (filled later if arrays exist)
             $types[] = new TzifTypeInfo(
-                gmtoff: $gmtoff,
-                isdst: $isdst,
+                gmtOff: $gmtoff,
+                isDst: $isdst,
                 abbrIndex: $abbrIndex,
                 isStd: false,
                 isUt: false,
@@ -250,14 +258,14 @@ final class TzifParser
             $rawStd = \substr($data, $offset, $ttisstdCnt);
             $offset += $ttisstdCnt;
             /** @var array<int,int> $unpacked */
-            $unpacked = \unpack("C{$ttisstdCnt}", $rawStd);
-            $stdArray = array_values($unpacked);
+            $unpacked = \unpack(\sprintf('C%s', $ttisstdCnt), $rawStd);
+            $stdArray = \array_values($unpacked);
             // fill in "isStd" flags
             for ($i = 0; $i < $typeCnt && $i < $ttisstdCnt; $i++) {
                 $t = $types[$i];
                 $types[$i] = new TzifTypeInfo(
-                    gmtoff: $t->gmtoff,
-                    isdst: $t->isdst,
+                    gmtOff: $t->gmtOff,
+                    isDst: $t->isDst,
                     abbrIndex: $t->abbrIndex,
                     isStd: ($stdArray[$i] !== 0),
                     isUt: $t->isUt,
@@ -270,16 +278,16 @@ final class TzifParser
             $rawUt = \substr($data, $offset, $ttisutCnt);
             $offset += $ttisutCnt;
             /** @var array<int,int> $unpacked */
-            $unpacked = \unpack("C{$ttisutCnt}", $rawUt);
-            $utArray = array_values($unpacked);
+            $unpacked = \unpack(\sprintf('C%s', $ttisutCnt), $rawUt);
+            $utArray = \array_values($unpacked);
             for ($i = 0; $i < $typeCnt && $i < $ttisutCnt; $i++) {
                 $t = $types[$i];
                 $types[$i] = new TzifTypeInfo(
-                    gmtoff: $t->gmtoff,
-                    isdst: $t->isdst,
+                    gmtOff: $t->gmtOff,
+                    isDst: $t->isDst,
                     abbrIndex: $t->abbrIndex,
                     isStd: $t->isStd,
-                    isUt: ($utArray[$i] !== 0)
+                    isUt: ($utArray[$i] !== 0),
                 );
             }
         }
@@ -289,7 +297,7 @@ final class TzifParser
         for ($i = 0; $i < $timeCnt; $i++) {
             $transitionObjs[] = new TzifTransition(
                 timestamp: $transTimestamps[$i],
-                typeIndex: $transitionTypes[$i]
+                typeIndex: $transitionTypes[$i],
             );
         }
 
@@ -304,7 +312,7 @@ final class TzifParser
 
     /**
      * Reads transition timestamps from a raw string (32-bit or 64-bit big-endian).
-     * 
+     *
      * @return array<int,string>
      */
     private function parseTransitionTimestamps(string $raw, int $count, bool $is32bit): array
@@ -315,16 +323,17 @@ final class TzifParser
         }
 
         if ($is32bit) {
-            // 32-bit approach (convert unsigned to signed)
+            // 32-bit approach (convert unsigned to signed int)
             /** @var array<int,int>|false $arr */
-            $arr = \unpack("N{$count}", $raw);
+            $arr = \unpack(\sprintf('N%s', $count), $raw);
             \assert($arr !== false);
             foreach ($arr as $val) {
                 // Convert to signed 32-bit (two's complement)
                 if (($val & 0x80000000) !== 0) {
-                    $val = (int)($val - 4294967296);
+                    $val = (int) ($val - 4294967296);
                 }
-                $result[] = (string)$val; // store as string
+
+                $result[] = (string) $val; // store as string
             }
         } else {
             // 64-bit approach with GMP
@@ -340,9 +349,9 @@ final class TzifParser
                 $lo = $hiLo['lo'] & 0xffffffff;
 
                 // Combine hi and lo as a 64-bit big integer using GMP
-                $val64 = \gmp_init((string)$hi, 10);
+                $val64 = \gmp_init((string) $hi, 10);
                 $val64 = \gmp_mul($val64, \gmp_init('4294967296', 10)); // * 2^32
-                $val64 = \gmp_add($val64, \gmp_init((string)$lo, 10));
+                $val64 = \gmp_add($val64, \gmp_init((string) $lo, 10));
 
                 // If sign bit set => convert to signed (two's complement)
                 if (($hiLo['hi'] & 0x80000000) !== 0) {
@@ -359,13 +368,11 @@ final class TzifParser
         return $result;
     }
 
-
-
     /**
      * Parses leap second records, each containing:
      *   - timestamp (32-bit or 64-bit)
      *   - correction (32-bit)
-     * 
+     *
      * @return array<int,array{timestamp:string,corr:int}>
      */
     private function parseLeapSeconds(string $raw, int $leapCnt, bool $is32bit): array
@@ -390,25 +397,27 @@ final class TzifParser
             $corr = $tmp['corr'];
             // Convert to signed 32-bit (two's complement)
             if (($corr & 0x80000000) !== 0) {
-                $corr = (int)($corr - 4294967296);
+                $corr = (int) ($corr - 4294967296);
             }
+
             $res[] = [
                 'timestamp' => $timestamp,
                 'corr' => $corr,
             ];
         }
+
         return $res;
     }
 
     /**
      * Returns an array of strings. In this simplified approach, we only
      * store one raw string. The abbreviation index points into this string.
-     * 
+     *
      * @return array<int,string>
      */
     private function extractAbbrevs(string $raw): array
     {
-        // For memory optimization, keep the raw block un-split.
+        // For memory optimization, keep the raw block unsplit.
         // The TzifTypeInfo.abbrIndex is used to find the zero-terminated substring on demand.
         return [$raw];
     }

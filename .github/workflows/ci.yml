@@ -63,8 +63,8 @@ jobs:
       - name: Composer install
         uses: ramsey/composer-install@v2
 
-      - name: Generate tz data
-        run: make tz
+      - name: Bundle timezone data
+        run: composer bundle-tzdata
 
       - name: Run PHPUnit
         if: success() || failure()

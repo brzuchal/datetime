@@ -167,6 +167,7 @@ final readonly class Duration
             nanos: $this->nanos - $nanos,
         );
     }
+
     /**
      * Returns a new instance with the specified duration added to the current values.
      *

@@ -2,15 +2,15 @@
 
 namespace Brzuchal\DateTime\Timezone;
 
-use Brzuchal\DateTime\LocalDateTime;
+use Brzuchal\DateTime\InvalidTimezone;
 
 /**
  * Timezone rules with lazy tzif file parsing and POSIX future transitions.
- * 
+ *
  * Hybrid approach:
- * - Historical transitions: loaded from tzif file on demand
+ * - Historical transitions: loaded from a Tzif file on demand
  * - Future transitions: computed from POSIX TZ string
- * 
+ *
  * @internal This class is not part of the public API.
  */
 final class ZoneRules
@@ -44,8 +44,9 @@ final class ZoneRules
 
     /**
      * Parse tzif file and extract transitions.
-     * 
+     *
      * @return array<int, array{0:int, 1:int, 2:bool, 3:string}>
+     * @throws InvalidTimezone
      */
     private function parseTzifFile(string $path): array
     {
@@ -57,8 +58,8 @@ final class ZoneRules
         foreach ($tf->transitions as $transitionObj) {
             $ts = (int) $transitionObj->timestamp;
             $typeInfo = $tf->types[$transitionObj->typeIndex];
-            $offset = $typeInfo->gmtoff;
-            $isDst = $typeInfo->isdst;
+            $offset = $typeInfo->gmtOff;
+            $isDst = $typeInfo->isDst;
             $abbr = $this->extractAbbreviation($abbrevData, $typeInfo->abbrIndex);
 
             $result[] = [
@@ -69,7 +70,7 @@ final class ZoneRules
             ];
         }
 
-        \usort($result, fn($a, $b) => $a[0] <=> $b[0]);
+        \usort($result, static fn ($a, $b) => $a[0] <=> $b[0]);
 
         return $result;
     }
@@ -85,6 +86,7 @@ final class ZoneRules
             if ($raw[$pos] === "\0") {
                 break;
             }
+
             $res .= $raw[$pos];
         }
 
@@ -99,11 +101,11 @@ final class ZoneRules
 
         $found = $this->parsedTransitions[0][1];
         foreach ($this->parsedTransitions as $tr) {
-            if ($tr[0] <= $utcTimestamp) {
-                $found = $tr[1];
-            } else {
+            if ($tr[0] > $utcTimestamp) {
                 break;
             }
+
+            $found = $tr[1];
         }
 
         return $found;
@@ -111,7 +113,7 @@ final class ZoneRules
 
     /**
      * Compute offset from POSIX TZ string for future timestamps.
-     * 
+     *
      * POSIX format: "STD offset DST,start,end"
      * Example: "CET-1CEST,M3.5.0,M10.5.0/3"
      */
@@ -122,9 +124,10 @@ final class ZoneRules
         if ($utcTimestamp < 0 && $utcTimestamp % 86400 !== 0) {
             $epochDay--;
         }
+
         $dateParts = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::dateFromEpochDay($epochDay);
         $year = $dateParts[0];
-        
+
         $parts = \explode(',', $this->posixRule);
         $prefix = $parts[0];
         $parsed = $this->parsePrefix($prefix);
@@ -160,7 +163,7 @@ final class ZoneRules
 
     /**
      * Parse POSIX TZ prefix to extract base and DST offsets.
-     * 
+     *
      * @return array{baseOffsetSec:int, dstOffsetSec:int}
      */
     private function parsePrefix(string $prefix): array
@@ -229,9 +232,9 @@ final class ZoneRules
         $epochDay = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::epochDayFromDate($year, $month, $day);
         // Hour only, minute/second 0
         $secondOfDay = $hour * 3600;
-        
+
         $localTs = $epochDay * 86400 + $secondOfDay;
-        
+
         return $localTs - $offsetSec;
     }
 
@@ -242,13 +245,13 @@ final class ZoneRules
         // Start from last day and work backwards
         for ($day = $daysInMonth; $day >= 1; $day--) {
             $epochDay = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::epochDayFromDate($year, $month, $day);
-            
+
             // 1970-01-01 was a Thursday => offset=3 => 0 => Monday, 6 => Sunday
             $dayOfWeekIndex = ($epochDay + 3) % 7;
             if ($dayOfWeekIndex < 0) {
                 $dayOfWeekIndex += 7;
             }
-            
+
             // LocalDate uses 0 (Monday) to 6 (Sunday)
             // POSIX TZ uses 0 (Sunday) to 6 (Saturday)
             // Convert LocalDate dow to POSIX dow
@@ -264,13 +267,13 @@ final class ZoneRules
 
     private function daysInMonth(int $year, int $month): int
     {
-        /** @var array<int, int> */
+        /** @var array<int, int> $mlen */
         static $mlen = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        
+
         if ($month < 1 || $month > 12) {
             return 31; // Fallback
         }
-        
+
         $days = $mlen[$month - 1];
 
         if ($month === 2 && $this->isLeapYear($year)) {

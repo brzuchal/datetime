@@ -44,9 +44,11 @@ final readonly class IsoStandardDurationFormatDefinition implements DurationForm
         if ($duration->hours > 0) {
             $buffer .= $duration->hours . 'H';
         }
+
         if ($duration->minutes > 0) {
             $buffer .= $duration->minutes . 'M';
         }
+
         if ($duration->seconds > 0 || $duration->nanos > 0) {
             $buffer .= $seconds . 'S';
         }

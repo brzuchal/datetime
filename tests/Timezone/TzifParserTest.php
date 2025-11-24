@@ -18,7 +18,7 @@ class TzifParserTest extends TestCase
         self::assertNotNull($tzif);
         self::assertGreaterThanOrEqual('1', $tzif->version);
         self::assertTrue($tzif->isV2Plus || $tzif->version === '1');
-        
+
         // UTC should have minimal transitions (often just one type)
         self::assertIsArray($tzif->types);
         self::assertNotEmpty($tzif->types);
@@ -32,12 +32,12 @@ class TzifParserTest extends TestCase
         self::assertNotNull($tzif);
         self::assertGreaterThanOrEqual('2', $tzif->version, 'Warsaw should be v2+');
         self::assertTrue($tzif->isV2Plus);
-        
+
         // Warsaw has many transitions (WW2, DST changes, etc.)
         self::assertNotEmpty($tzif->transitions);
         self::assertNotEmpty($tzif->types);
         self::assertNotEmpty($tzif->abbreviations);
-        
+
         // Should have POSIX string for future rules
         self::assertNotNull($tzif->posixString, 'V2+ should have POSIX string');
     }
@@ -50,14 +50,14 @@ class TzifParserTest extends TestCase
         self::assertNotNull($tzif);
         self::assertGreaterThanOrEqual('2', $tzif->version);
         self::assertTrue($tzif->isV2Plus);
-        
+
         // New York has many DST transitions
         self::assertNotEmpty($tzif->transitions);
-        
+
         // Check for DST flags in types
         $hasDst = false;
         foreach ($tzif->types as $type) {
-            if ($type->isdst) {
+            if ($type->isDst) {
                 $hasDst = true;
                 break;
             }
@@ -71,15 +71,15 @@ class TzifParserTest extends TestCase
         $tzif = $parser->parseFile(self::FIXTURES_DIR . '/Europe/Warsaw');
 
         self::assertGreaterThan(0, count($tzif->transitions));
-        
+
         // Check first transition structure
         $transition = $tzif->transitions[0];
         self::assertObjectHasProperty('timestamp', $transition);
         self::assertObjectHasProperty('typeIndex', $transition);
-        
+
         // Timestamp should be a string (can be 64-bit)
         self::assertIsString($transition->timestamp);
-        
+
         // Type index should reference a valid type
         self::assertIsInt($transition->typeIndex);
         self::assertArrayHasKey($transition->typeIndex, $tzif->types);
@@ -91,18 +91,18 @@ class TzifParserTest extends TestCase
         $tzif = $parser->parseFile(self::FIXTURES_DIR . '/Europe/Warsaw');
 
         self::assertNotEmpty($tzif->types);
-        
+
         $type = $tzif->types[0];
-        self::assertObjectHasProperty('gmtoff', $type);
-        self::assertObjectHasProperty('isdst', $type);
+        self::assertObjectHasProperty('gmtOff', $type);
+        self::assertObjectHasProperty('isDst', $type);
         self::assertObjectHasProperty('abbrIndex', $type);
-        
-        // gmtoff should be in reasonable range (-18h to +18h)
-        self::assertGreaterThanOrEqual(-64800, $type->gmtoff);
-        self::assertLessThanOrEqual(64800, $type->gmtoff);
-        
-        // isdst should be boolean
-        self::assertIsBool($type->isdst);
+
+        // gmtOff should be in reasonable range (-18h to +18h)
+        self::assertGreaterThanOrEqual(-64800, $type->gmtOff);
+        self::assertLessThanOrEqual(64800, $type->gmtOff);
+
+        // isDst should be boolean
+        self::assertIsBool($type->isDst);
     }
 
     public function testExtractsAbbreviations(): void
@@ -112,7 +112,7 @@ class TzifParserTest extends TestCase
 
         self::assertNotEmpty($tzif->abbreviations);
         self::assertIsArray($tzif->abbreviations);
-        
+
         // Abbreviations should be a raw string block
         self::assertIsString($tzif->abbreviations[0]);
     }
@@ -126,7 +126,7 @@ class TzifParserTest extends TestCase
             self::assertNotNull($tzif->posixString);
             self::assertIsString($tzif->posixString);
             self::assertNotEmpty($tzif->posixString);
-            
+
             // POSIX string should contain timezone info (e.g., "CET-1CEST,M3.5.0,M10.5.0/3")
             self::assertMatchesRegularExpression('/[A-Z]+/', $tzif->posixString);
         }
@@ -136,7 +136,7 @@ class TzifParserTest extends TestCase
     {
         $this->expectException(InvalidTimezone::class);
         $this->expectExceptionMessage('Invalid TZif magic');
-        
+
         $parser = new TzifParser();
         // Provide 44+ bytes with invalid magic (so length check passes)
         $parser->parseData('XXXX' . str_repeat("\x00", 44));
@@ -146,7 +146,7 @@ class TzifParserTest extends TestCase
     {
         $this->expectException(InvalidTimezone::class);
         $this->expectExceptionMessage('Data too short');
-        
+
         $parser = new TzifParser();
         $parser->parseData('TZif' . str_repeat("\x00", 10)); // Too short for header
     }
@@ -155,7 +155,7 @@ class TzifParserTest extends TestCase
     {
         $this->expectException(InvalidTimezone::class);
         $this->expectExceptionMessage('Cannot read file');
-        
+
         $parser = new TzifParser();
         $parser->parseFile('/nonexistent/timezone/file');
     }
@@ -167,7 +167,7 @@ class TzifParserTest extends TestCase
 
         // Leap second data may be empty (most zones don't include it)
         self::assertIsArray($tzif->leapSecondData);
-        
+
         if (!empty($tzif->leapSecondData)) {
             $leap = $tzif->leapSecondData[0];
             self::assertArrayHasKey('timestamp', $leap);
@@ -188,7 +188,7 @@ class TzifParserTest extends TestCase
                 break;
             }
         }
-        
+
         // Note: This might not always be true depending on tzdata version
         // but Warsaw historically had many changes
         if ($tzif->isV2Plus) {
@@ -203,7 +203,7 @@ class TzifParserTest extends TestCase
 
         // 2024-03-31 02:00 → 03:00 (spring forward)
         $targetTimestamp = strtotime('2024-03-31 01:00:00 UTC');
-        
+
         // Find transition around this time
         $foundTransition = null;
         foreach ($tzif->transitions as $trans) {
@@ -213,13 +213,13 @@ class TzifParserTest extends TestCase
                 break;
             }
         }
-        
+
         if ($foundTransition) {
             self::assertNotNull($foundTransition);
             $type = $tzif->types[$foundTransition->typeIndex];
-            
+
             // After spring transition, should be DST (CEST = UTC+2)
-            self::assertTrue($type->isdst || $type->gmtoff === 7200);
+            self::assertTrue($type->isDst || $type->gmtOff === 7200);
         }
     }
 }

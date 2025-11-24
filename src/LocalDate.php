@@ -45,9 +45,8 @@ final class LocalDate implements Temporal
 
     // Hooked properties to reduce date calculations
 
-    /**
-     * Represents a number of days from the beginning of year 0
-     */
+    // phpcs:disable
+    /** Represents a number of days from the beginning of year 0 */
     private(set) int $epochDay {
         get => $this->epochDay ??= IsoCalendar::epochDayFromDate($this->year, $this->month, $this->day);
     }
@@ -78,6 +77,7 @@ final class LocalDate implements Temporal
      * @var IsoEra Lazily derived ISO era based on the year sign.
      */
     public IsoEra $era { get => $this->era ??= IsoEra::fromYear($this->year); }
+    // phpcs:enable
 
     /**
      * Creates a new instance from year-month-day in the ISO-8601 calendar system.
@@ -135,7 +135,8 @@ final class LocalDate implements Temporal
      * Parses a date string and returns an instance of the class.
      *
      * @param string $text      The date string to be parsed.
-     * @param DateTimeFormatter|null $formatter Optional formatter to define the parsing rules. Defaults to Extended ISO Local Date format.
+     * @param DateTimeFormatter|null $formatter Optional formatter to define the parsing rules.
+     *          Defaults to Extended ISO Local Date format.
      *
      * @return self An instance of the class representing the parsed date.
      *
@@ -248,8 +249,6 @@ final class LocalDate implements Temporal
         return self::fromEpochDay($this->epochDay + $daysDelta);
     }
 
-
-
     /**
      * Subtracts a period from the current date.
      *
@@ -269,7 +268,9 @@ final class LocalDate implements Temporal
     /**
      * Compares this date with another date.
      *
-     * @return int<-1, 1> Returns -1 if this date is before the other date, 0 if they are equal, and 1 if this date is after the other date.
+     * @return int<-1, 1> Returns -1 if this date is before the other date,
+     *      0 if they are equal,
+     *      and 1 if this date is after the other date.
      */
     public function compareTo(self $other): int
     {
@@ -291,7 +292,8 @@ final class LocalDate implements Temporal
     /**
      * Calculates the day of the week based on the epoch day.
      *
-     * @return int The day of the week corresponding to the calculated index, where 0 represents Monday, and 6 represents Sunday.
+     * @return int The day of the week corresponding to the calculated index,
+     *      where 0 represents Monday, and 6 represents Sunday.
      */
     private function calculateDayOfWeek(): int
     {
@@ -323,11 +325,17 @@ final class LocalDate implements Temporal
     public function __unserialize(array $data): void
     {
         if (! \array_key_exists('value', $data)) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s payload missing required keys.', self::class));
+            throw new \UnexpectedValueException(\sprintf(
+                'Serialized %s payload missing required keys.',
+                self::class,
+            ));
         }
 
         if (! \is_string($data['value']) || $data['value'] === '') {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s date must be a non-empty string.', self::class));
+            throw new \UnexpectedValueException(\sprintf(
+                'Serialized %s date must be a non-empty string.',
+                self::class,
+            ));
         }
 
         $formatter = DateTimeFormatter::of(DateTimeFormat::ExtendedIsoLocalDate);
@@ -350,16 +358,25 @@ final class LocalDate implements Temporal
         \assert($day !== null);
 
         if (! self::isValidMonth($month)) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s month must be between 1 and 12.', self::class));
+            throw new \UnexpectedValueException(\sprintf(
+                'Serialized %s month must be between 1 and 12.',
+                self::class,
+            ));
         }
 
         if (! self::isValidDay($day)) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s day must be between 1 and 31.', self::class));
+            throw new \UnexpectedValueException(\sprintf(
+                'Serialized %s day must be between 1 and 31.',
+                self::class,
+            ));
         }
 
         /** @phpstan-ignore-next-line staticMethod.alreadyNarrowedType */
         if (! IsoCalendar::isValidDate($year, $month, $day)) {
-            throw new \UnexpectedValueException(\sprintf('Serialized %s contains a date invalid for the ISO calendar system.', self::class));
+            throw new \UnexpectedValueException(\sprintf(
+                'Serialized %s contains a date invalid for the ISO calendar system.',
+                self::class,
+            ));
         }
 
         self::__construct(year: $year, month: $month, day: $day);
@@ -411,19 +428,18 @@ final class LocalDate implements Temporal
     public function supports(TemporalField ...$fields): bool
     {
         foreach ($fields as $field) {
-            if (
-                match ($field) {
-                    TemporalField::Era,
-                    TemporalField::Year,
-                    TemporalField::Month,
-                    TemporalField::Day,
-                    TemporalField::DayOfYear,
-                    TemporalField::DayOfWeek,
-                    TemporalField::WeekOfYear,
-                    TemporalField::WeekOfMonth => true,
-                    default => false,
-                }
-            ) {
+            $supported = match ($field) {
+                TemporalField::Era,
+                TemporalField::Year,
+                TemporalField::Month,
+                TemporalField::Day,
+                TemporalField::DayOfYear,
+                TemporalField::DayOfWeek,
+                TemporalField::WeekOfYear,
+                TemporalField::WeekOfMonth => true,
+                default => false,
+            };
+            if ($supported) {
                 continue;
             }
 
