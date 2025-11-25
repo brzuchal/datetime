@@ -107,7 +107,12 @@ final class ZoneRulesProvider
             return;
         }
 
-        $composerData = \json_decode(\file_get_contents($composerPath), true);
+        $composerJson = \file_get_contents($composerPath);
+        if ($composerJson === false) {
+            return;
+        }
+
+        $composerData = \json_decode($composerJson, true);
 
         if (!\is_array($composerData)) {
             return;
