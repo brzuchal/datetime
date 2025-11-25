@@ -119,6 +119,14 @@ final class ZoneRulesProvider
         }
 
         // Check for extra.brzuchal/datetime.tzdata-path
+        if (!isset($composerData['extra']) || !\is_array($composerData['extra'])) {
+            return;
+        }
+
+        if (!isset($composerData['extra']['brzuchal/datetime']) || !\is_array($composerData['extra']['brzuchal/datetime'])) {
+            return;
+        }
+
         if (!isset($composerData['extra']['brzuchal/datetime']['tzdata-path'])) {
             return;
         }
