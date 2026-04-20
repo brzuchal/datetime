@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Temporal\Adjusters;
 
@@ -18,7 +20,8 @@ final class DayOfWeekAdjuster implements TemporalAdjuster
         private DayOfWeek $target,
         private bool $strict,
         private bool $previous,
-    ) {}
+    ) {
+    }
 
     public static function next(DayOfWeek $dayOfWeek): self
     {

@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Tests;
 
@@ -198,8 +200,6 @@ final class PeriodTest extends TestCase
         self::assertSame(2, $result->months);
         self::assertSame(5, $result->days);
     }
-
-
 
     public function testNegatedNegatesAllComponents(): void
     {

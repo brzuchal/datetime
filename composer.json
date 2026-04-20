@@ -20,12 +20,24 @@
   },
   "require": {
     "php": ">=8.4",
-    "ext-ctype": "*"
+    "ext-ctype": "*",
+    "ext-gmp": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "^11.5",
     "phpstan/phpstan": "^2.1",
     "brzuchal/coding-standard": "^1.0"
+  },
+  "scripts": {
+    "bundle-tzdata": [
+      "@php bin/bundle-tzdata.php"
+    ],
+    "post-install-cmd": [
+      "@bundle-tzdata"
+    ],
+    "post-update-cmd": [
+      "@bundle-tzdata"
+    ]
   },
   "config": {
     "allow-plugins": {

@@ -1,10 +1,12 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Tests\Calendars;
 
-use Brzuchal\DateTime\CalendarSystems\IsoCalendar;
-use Brzuchal\DateTime\CalendarSystems\IsoEra;
 use Brzuchal\DateTime\Instant;
+use Brzuchal\DateTime\Internal\IsoCalendar;
+use Brzuchal\DateTime\IsoEra;
 use Brzuchal\DateTime\LocalDate;
 use PHPUnit\Framework\TestCase;
 

@@ -1,6 +1,8 @@
-<?php declare(strict_types=1);
+<?php
 
-namespace Brzuchal\DateTime\CalendarSystems;
+declare(strict_types=1);
+
+namespace Brzuchal\DateTime\Internal;
 
 use Brzuchal\DateTime\Instant;
 use Brzuchal\DateTime\LocalDate;

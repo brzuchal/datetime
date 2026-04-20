@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -26,7 +28,8 @@ final readonly class Duration
         public int $minutes = 0,
         public int $seconds = 0,
         public int $nanos = 0,
-    ) {}
+    ) {
+    }
 
     /**
      * Parses an ISO 8601 period string and creates a new instance of the class.
@@ -167,6 +170,7 @@ final readonly class Duration
             nanos: $this->nanos - $nanos,
         );
     }
+
     /**
      * Returns a new instance with the specified duration added to the current values.
      *

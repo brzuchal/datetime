@@ -6,12 +6,12 @@ namespace Tests;
 
 use Brzuchal\DateTime\DayOfWeek;
 use Brzuchal\DateTime\Duration;
-use Brzuchal\DateTime\Period;
-use Brzuchal\DateTime\Format\InvalidInput;
+use Brzuchal\DateTime\Format\InvalidFormat;
 use Brzuchal\DateTime\Format\TemporalFields;
 use Brzuchal\DateTime\InsufficientDateComponents;
 use Brzuchal\DateTime\InvalidDate;
 use Brzuchal\DateTime\LocalDate;
+use Brzuchal\DateTime\Period;
 use Brzuchal\DateTime\Temporal\Adjusters\DayOfWeekAdjuster;
 use Brzuchal\DateTime\Temporal\TemporalField;
 use Brzuchal\DateTime\Temporal\TemporalQueries;
@@ -129,7 +129,6 @@ final class LocalDateTest extends TestCase
         self::assertSame(23, $result->day);
     }
 
-
     public function testAddMonthsSkipsYearZero(): void
     {
         $initial = LocalDate::of(-1, 12, 31);
@@ -178,7 +177,7 @@ final class LocalDateTest extends TestCase
     #[DataProvider('dataParseException')]
     public function testParseException(string $date): void
     {
-        $this->expectException(InvalidInput::class);
+        $this->expectException(InvalidFormat::class);
 
         LocalDate::parse($date);
     }
@@ -308,6 +307,16 @@ final class LocalDateTest extends TestCase
         self::assertSame(6, LocalDate::of(2021, 5, 31)->weekOfMonth);
     }
 
+    public function testWeekBasedYear(): void
+    {
+        // 2021-01-01 is Friday, belongs to week 53 of 2020
+        self::assertSame(2020, LocalDate::of(2021, 1, 1)->weekBasedYear);
+        // 2021-01-04 is Monday, belongs to week 1 of 2021
+        self::assertSame(2021, LocalDate::of(2021, 1, 4)->weekBasedYear);
+        // 2024-12-30 is Monday, belongs to week 1 of 2025
+        self::assertSame(2025, LocalDate::of(2024, 12, 30)->weekBasedYear);
+    }
+
     public function testIsLeapYear(): void
     {
         $localDate = LocalDate::of(2020, 2, 29);
@@ -327,7 +336,7 @@ final class LocalDateTest extends TestCase
     {
         $minus = \str_starts_with($expectedDate, '-');
         if ($minus) {
-            [$_, $expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
+            [$emptyPrefix, $expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
             $expectedYear = -(int) $expectedYear;
         } else {
             [$expectedYear, $expectedMonth, $expectedDay] = \explode('-', $expectedDate);
@@ -481,8 +490,9 @@ final class LocalDateTest extends TestCase
         self::assertFalse($first->equalTo(LocalDate::of(2024, 7, 15)));
     }
 
-    // Period integration tests
-
+    /**
+     * Period integration tests
+     */
     public function testPlusPeriodAddsYearsMonthsDays(): void
     {
         $date = LocalDate::of(2025, 1, 15);
@@ -578,4 +588,3 @@ final class LocalDateTest extends TestCase
         self::assertSame(26, $result->day);
     }
 }
-

@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -9,4 +11,5 @@ namespace Brzuchal\DateTime;
  * the expected format, range, or other defined criteria for validity.
  */
 final class InvalidDate extends \Exception
-{}
+{
+}

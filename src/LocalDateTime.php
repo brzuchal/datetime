@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -24,6 +26,7 @@ final class LocalDateTime implements Temporal
 {
     use HandlesTemporalQueriesAndAdjustments;
 
+    // phpcs:disable
     public int $year { get => $this->date->year; }
 
     /** @var int<1, 12> */
@@ -43,9 +46,11 @@ final class LocalDateTime implements Temporal
 
     /** @var int<0, 999999999> */
     public int $nano { get => $this->time->nano; }
+    // phpcs:enable
 
     private function __construct(public readonly LocalDate $date, public readonly LocalTime $time)
-    {}
+    {
+    }
 
     /**
      * @return array{value: non-empty-string}
@@ -371,11 +376,11 @@ final class LocalDateTime implements Temporal
     /**
      * Returns a copy of this LocalDateTime with the specified delta added.
      *
-     * @param LocalDateTimeDelta $delta The delta to add.
+     * @param DateTimeDelta $delta The delta to add.
      *
      * @return self A new LocalDateTime with the adjustment applied.
      */
-    public function plusDelta(LocalDateTimeDelta $delta): self
+    public function plusDelta(DateTimeDelta $delta): self
     {
         return $this->plusPeriod($delta->period)->plus($delta->duration);
     }
@@ -425,11 +430,11 @@ final class LocalDateTime implements Temporal
     /**
      * Returns a copy of this LocalDateTime with the specified delta subtracted.
      *
-     * @param LocalDateTimeDelta $delta The delta to subtract.
+     * @param DateTimeDelta $delta The delta to subtract.
      *
      * @return self A new LocalDateTime with the adjustment applied.
      */
-    public function minusDelta(LocalDateTimeDelta $delta): self
+    public function minusDelta(DateTimeDelta $delta): self
     {
         return $this->minusPeriod($delta->period)->minus($delta->duration);
     }

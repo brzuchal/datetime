@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -45,7 +47,8 @@ final readonly class LocalTime implements Temporal
         public int $minute,
         public int $second,
         public int $nano,
-    ) {}
+    ) {
+    }
 
     /**
      * Create a LocalTime from hour, minute, second and nanosecond components.

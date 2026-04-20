@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -6,4 +8,5 @@ namespace Brzuchal\DateTime;
  * Exception thrown when a time value falls outside the supported range.
  */
 final class InvalidTime extends \Exception
-{}
+{
+}
