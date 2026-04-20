@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Tests;
 
@@ -101,8 +103,6 @@ final class DurationTest extends TestCase
         $this->expectException(InvalidDuration::class);
         Duration::parse('T25:61:9999', DurationFormat::IsoExtended);
     }
-
-
 
     public function testParsingFractionalHoursIsRejected(): void
     {

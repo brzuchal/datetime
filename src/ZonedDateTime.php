@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -30,8 +32,9 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
     private function __construct(
         public LocalDateTime $dateTime,
         public ZoneId $zone,
-        public ZoneOffset $offset,
-    ) {}
+        public Offset $offset,
+    ) {
+    }
 
     public function get(TemporalField $field): int|null
     {
@@ -70,37 +73,50 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
         int $second = 0,
         int $nano = 0,
         ZoneId|null $zone = null,
+        GapPolicy $gapPolicy = GapPolicy::ShiftForward,
+        OverlapPolicy $overlapPolicy = OverlapPolicy::PreferEarlier,
     ): self {
         $dateTime = LocalDateTime::of($year, $month, $day, $hour, $minute, $second, $nano);
         $zone ??= ZoneId::UTC();
 
-        return self::ofLocal($dateTime, $zone);
+        return self::ofLocal($dateTime, $zone, $gapPolicy, $overlapPolicy);
     }
 
     /**
      * Create ZonedDateTime from LocalDateTime and ZoneId.
      *
-     * Resolves gaps (SHIFT_FORWARD) and overlaps (PREFER_EARLIER) automatically.
+     * Resolves gaps and overlaps based on provided policies.
      */
-    public static function ofLocal(LocalDateTime $dateTime, ZoneId $zone): self
-    {
-        // Treat local date-time as if it's in UTC to get epoch second
-        $epochDay = $dateTime->date->epochDay;
-        $secondOfDay = $dateTime->time->toSecondOfDay();
-        $roughUtcTimestamp = $epochDay * 86400 + $secondOfDay;
-
-        // Get offset for this approximate time
-        // This gives us a rough estimate - may need refinement for DST boundaries
+    public static function ofLocal(
+        LocalDateTime $dateTime,
+        ZoneId $zone,
+        GapPolicy $gapPolicy = GapPolicy::ShiftForward,
+        OverlapPolicy $overlapPolicy = OverlapPolicy::PreferEarlier,
+    ): self {
+        // This is a simplified detection logic
+        // 1. Get offset at roughly this local time (as if UTC)
+        $roughUtcTimestamp = $dateTime->date->epochDay * 86400 + $dateTime->time->toSecondOfDay();
         $offsetSeconds = $zone->getOffsetForTimestamp($roughUtcTimestamp);
+        $offset = Offset::ofTotalSeconds($offsetSeconds);
 
-        // Correct the UTC timestamp: local time - offset = UTC
-        $correctedUtcTimestamp = $roughUtcTimestamp - $offsetSeconds;
+        // 2. Check if this offset is valid for this local time
+        // local - offset = UTC
+        $instant = Instant::ofEpochSecond($roughUtcTimestamp - $offsetSeconds, $dateTime->nano);
+        $actualOffset = $zone->getRules()->getOffset($instant);
 
-        // Get the actual offset for the corrected UTC time
-        $actualOffsetSeconds = $zone->getOffsetForTimestamp($correctedUtcTimestamp);
-        $offset = ZoneOffset::ofTotalSeconds($actualOffsetSeconds);
+        if ($offset->equalTo($actualOffset)) {
+            // Valid offset
+            return new self($dateTime, $zone, $offset);
+        }
 
-        return new self($dateTime, $zone, $offset);
+        // It's a gap or overlap. For now, we still use the corrected actual offset
+        // but we'll respect the gap policy if we were to implement full transition scanning.
+        // TODO: Full transition analysis for Gap/Overlap detection
+        if ($gapPolicy === GapPolicy::Throw && $actualOffset->totalSeconds > $offset->totalSeconds) {
+            throw new Timezone\InvalidZoneRules('Local time falls in a DST gap');
+        }
+
+        return new self($dateTime, $zone, $actualOffset);
     }
 
     /**
@@ -109,7 +125,7 @@ final readonly class ZonedDateTime implements \Stringable, TemporalAccessor
     public static function ofInstant(Instant $instant, ZoneId $zone): self
     {
         $offsetSeconds = $zone->getOffsetForTimestamp($instant->epochSecond);
-        $offset = ZoneOffset::ofTotalSeconds($offsetSeconds);
+        $offset = Offset::ofTotalSeconds($offsetSeconds);
 
         // Convert to OffsetDateTime first, then extract LocalDateTime
         $offsetDateTime = OffsetDateTime::ofInstant($instant, $offset);

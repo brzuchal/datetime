@@ -1,15 +1,16 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
-use Brzuchal\DateTime\Temporal\Temporal;
 use Brzuchal\DateTime\Temporal\TemporalAccessor;
 use Brzuchal\DateTime\Temporal\TemporalField;
 
 /**
  * Date-time with a fixed UTC offset (no timezone/DST awareness).
  *
- * Combines {@see LocalDateTime} with a fixed {@see ZoneOffset}.
+ * Combines {@see LocalDateTime} with a fixed {@see Offset}.
  * Unlike {@see ZonedDateTime}, the offset never changes (no DST transitions).
  *
  * Use cases:
@@ -19,7 +20,7 @@ use Brzuchal\DateTime\Temporal\TemporalField;
  *
  * Example:
  * ```php
- * $odt = OffsetDateTime::of(2024, 3, 15, 14, 30, 0, 0, ZoneOffset::of(2, 0));
+ * $odt = OffsetDateTime::of(2024, 3, 15, 14, 30, 0, 0, Offset::of(2, 0));
  * echo $odt; // "2024-03-15T14:30:00+02:00"
  * ```
  */
@@ -27,8 +28,9 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
 {
     private function __construct(
         public LocalDateTime $dateTime,
-        public ZoneOffset $offset,
-    ) {}
+        public Offset $offset,
+    ) {
+    }
 
     public function get(TemporalField $field): int|null
     {
@@ -63,26 +65,26 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
         int $minute,
         int $second = 0,
         int $nano = 0,
-        ZoneOffset|null $offset = null,
+        Offset|null $offset = null,
     ): self {
         $dateTime = LocalDateTime::of($year, $month, $day, $hour, $minute, $second, $nano);
-        $offset ??= ZoneOffset::UTC();
+        $offset ??= Offset::UTC();
 
         return new self($dateTime, $offset);
     }
 
     /**
-     * Create OffsetDateTime from LocalDateTime and ZoneOffset.
+     * Create OffsetDateTime from LocalDateTime and Offset.
      */
-    public static function ofDateTimeAndOffset(LocalDateTime $dateTime, ZoneOffset $offset): self
+    public static function ofDateTimeAndOffset(LocalDateTime $dateTime, Offset $offset): self
     {
         return new self($dateTime, $offset);
     }
 
     /**
-     * Create OffsetDateTime from an Instant and ZoneOffset.
+     * Create OffsetDateTime from an Instant and Offset.
      */
-    public static function ofInstant(Instant $instant, ZoneOffset $offset): self
+    public static function ofInstant(Instant $instant, Offset $offset): self
     {
         // Shift the instant by the offset to get "local" instant
         $shiftedTicks = $instant->ticks + ($offset->totalSeconds * Instant::TICKS_PER_SECOND);
@@ -96,14 +98,14 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
     /**
      * Get current OffsetDateTime in given offset (defaults to system timezone offset).
      */
-    public static function now(ZoneOffset|null $offset = null): self
+    public static function now(Offset|null $offset = null): self
     {
         $instant = Instant::now();
 
         if ($offset === null) {
             // Use system timezone's current offset
             $offsetSeconds = ZoneId::systemDefault()->getRules()->getOffsetForTimestamp($instant->epochSecond);
-            $offset = ZoneOffset::ofTotalSeconds($offsetSeconds);
+            $offset = Offset::ofTotalSeconds($offsetSeconds);
         }
 
         return self::ofInstant($instant, $offset);
@@ -143,14 +145,14 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
      *
      * Example:
      * ```php
-     * $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
+     * $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
      * // 2024-03-15T14:00:00+02:00
      *
-     * $odt2 = $odt1->withOffsetSameInstant(ZoneOffset::of(5, 0));
+     * $odt2 = $odt1->withOffsetSameInstant(Offset::of(5, 0));
      * // 2024-03-15T17:00:00+05:00 (same instant, different local time)
      * ```
      */
-    public function withOffsetSameInstant(ZoneOffset $newOffset): self
+    public function withOffsetSameInstant(Offset $newOffset): self
     {
         if ($this->offset->equalTo($newOffset)) {
             return $this;
@@ -166,14 +168,14 @@ final readonly class OffsetDateTime implements \Stringable, TemporalAccessor
      *
      * Example:
      * ```php
-     * $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
+     * $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
      * // 2024-03-15T14:00:00+02:00
      *
-     * $odt2 = $odt1->withOffsetSameLocal(ZoneOffset::of(5, 0));
+     * $odt2 = $odt1->withOffsetSameLocal(Offset::of(5, 0));
      * // 2024-03-15T14:00:00+05:00 (same local time, different instant)
      * ```
      */
-    public function withOffsetSameLocal(ZoneOffset $newOffset): self
+    public function withOffsetSameLocal(Offset $newOffset): self
     {
         if ($this->offset->equalTo($newOffset)) {
             return $this;

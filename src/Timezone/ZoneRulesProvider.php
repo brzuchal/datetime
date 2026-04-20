@@ -1,8 +1,10 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Timezone;
 
-use Brzuchal\DateTime\InvalidTimezone;
+use Brzuchal\DateTime\InvalidZoneId;
 
 /**
  * Provider for timezone rules loaded from Tzif files.
@@ -20,7 +22,7 @@ final class ZoneRulesProvider
     /**
      * Get ZoneRules for a given IANA timezone identifier.
      *
-     * @throws InvalidTimezone If the timezone is not found.
+     * @throws InvalidZoneId If the zone ID is not found.
      */
     public static function getRules(string $zoneId): ZoneRules
     {
@@ -36,7 +38,7 @@ final class ZoneRulesProvider
 
         $tzifPath = self::findTzifFile($zoneId);
         if ($tzifPath === null) {
-            throw new InvalidTimezone(sprintf('Unknown timezone: %s', $zoneId));
+            throw new InvalidZoneId('Unknown time-zone ID: ' . $zoneId);
         }
 
         // Parse tzif file and create ZoneRules

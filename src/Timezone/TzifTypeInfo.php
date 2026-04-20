@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Timezone;
 
@@ -20,5 +22,6 @@ final readonly class TzifTypeInfo
         public int $abbrIndex,
         public bool $isStd,
         public bool $isUt,
-    ) {}
+    ) {
+    }
 }

@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Format;
 
@@ -15,7 +17,9 @@ final readonly class TemporalFields implements TemporalAccessor
         public int|null $minute = null,
         public int|null $second = null,
         public int|null $nano = null,
-    ) {}
+        public int|null $weekBasedYear = null,
+    ) {
+    }
 
     public function get(TemporalField $field): int|null
     {
@@ -27,6 +31,7 @@ final readonly class TemporalFields implements TemporalAccessor
             TemporalField::Minute => $this->minute,
             TemporalField::Second => $this->second,
             TemporalField::Nano => $this->nano,
+            TemporalField::WeekBasedYear => $this->weekBasedYear,
             default => null,
         };
     }

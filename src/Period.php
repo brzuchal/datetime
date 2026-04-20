@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -34,7 +36,8 @@ final readonly class Period
         public int $years = 0,
         public int $months = 0,
         public int $days = 0,
-    ) {}
+    ) {
+    }
 
     /**
      * Creates a period with the specified years, months, and days.

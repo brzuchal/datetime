@@ -1,14 +1,16 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Tests\Timezone;
 
+use Brzuchal\DateTime\InvalidZoneRules;
 use Brzuchal\DateTime\Timezone\TzifParser;
-use Brzuchal\DateTime\InvalidTimezone;
 use PHPUnit\Framework\TestCase;
 
 class TzifParserTest extends TestCase
 {
-    private const FIXTURES_DIR = __DIR__ . '/../fixtures/zoneinfo';
+    private const string FIXTURES_DIR = __DIR__ . '/../fixtures/zoneinfo';
 
     public function testParsesUTCZone(): void
     {
@@ -62,6 +64,7 @@ class TzifParserTest extends TestCase
                 break;
             }
         }
+
         self::assertTrue($hasDst, 'New York should have DST types');
     }
 
@@ -122,19 +125,21 @@ class TzifParserTest extends TestCase
         $parser = new TzifParser();
         $tzif = $parser->parseFile(self::FIXTURES_DIR . '/Europe/Warsaw');
 
-        if ($tzif->isV2Plus) {
-            self::assertNotNull($tzif->posixString);
-            self::assertIsString($tzif->posixString);
-            self::assertNotEmpty($tzif->posixString);
-
-            // POSIX string should contain timezone info (e.g., "CET-1CEST,M3.5.0,M10.5.0/3")
-            self::assertMatchesRegularExpression('/[A-Z]+/', $tzif->posixString);
+        if (!$tzif->isV2Plus) {
+            return;
         }
+
+        self::assertNotNull($tzif->posixString);
+        self::assertIsString($tzif->posixString);
+        self::assertNotEmpty($tzif->posixString);
+
+        // POSIX string should contain timezone info (e.g., "CET-1CEST,M3.5.0,M10.5.0/3")
+        self::assertMatchesRegularExpression('/[A-Z]+/', $tzif->posixString);
     }
 
     public function testRejectsInvalidMagic(): void
     {
-        $this->expectException(InvalidTimezone::class);
+        $this->expectException(InvalidZoneRules::class);
         $this->expectExceptionMessage('Invalid TZif magic');
 
         $parser = new TzifParser();
@@ -144,7 +149,7 @@ class TzifParserTest extends TestCase
 
     public function testRejectsTooShortData(): void
     {
-        $this->expectException(InvalidTimezone::class);
+        $this->expectException(InvalidZoneRules::class);
         $this->expectExceptionMessage('Data too short');
 
         $parser = new TzifParser();
@@ -153,8 +158,8 @@ class TzifParserTest extends TestCase
 
     public function testRejectsNonexistentFile(): void
     {
-        $this->expectException(InvalidTimezone::class);
-        $this->expectExceptionMessage('Cannot read file');
+        $this->expectException(InvalidZoneRules::class);
+        $this->expectExceptionMessage('Unable to read TZIF file');
 
         $parser = new TzifParser();
         $parser->parseFile('/nonexistent/timezone/file');
@@ -168,11 +173,13 @@ class TzifParserTest extends TestCase
         // Leap second data may be empty (most zones don't include it)
         self::assertIsArray($tzif->leapSecondData);
 
-        if (!empty($tzif->leapSecondData)) {
-            $leap = $tzif->leapSecondData[0];
-            self::assertArrayHasKey('timestamp', $leap);
-            self::assertArrayHasKey('corr', $leap);
+        if (empty($tzif->leapSecondData)) {
+            return;
         }
+
+        $leap = $tzif->leapSecondData[0];
+        self::assertArrayHasKey('timestamp', $leap);
+        self::assertArrayHasKey('corr', $leap);
     }
 
     public function testParsesHistoricalTransitions(): void
@@ -183,7 +190,7 @@ class TzifParserTest extends TestCase
         // Warsaw should have pre-1970 transitions
         $hasPre1970 = false;
         foreach ($tzif->transitions as $trans) {
-            if ((int)$trans->timestamp < 0) {
+            if ((int) $trans->timestamp < 0) {
                 $hasPre1970 = true;
                 break;
             }
@@ -191,9 +198,11 @@ class TzifParserTest extends TestCase
 
         // Note: This might not always be true depending on tzdata version
         // but Warsaw historically had many changes
-        if ($tzif->isV2Plus) {
-            self::assertTrue($hasPre1970, 'V2+ Warsaw should have pre-1970 data');
+        if (!$tzif->isV2Plus) {
+            return;
         }
+
+        self::assertTrue($hasPre1970, 'V2+ Warsaw should have pre-1970 data');
     }
 
     public function testKnownDSTTransition2024WarsawSpring(): void
@@ -207,19 +216,21 @@ class TzifParserTest extends TestCase
         // Find transition around this time
         $foundTransition = null;
         foreach ($tzif->transitions as $trans) {
-            $ts = (int)$trans->timestamp;
+            $ts = (int) $trans->timestamp;
             if (abs($ts - $targetTimestamp) < 7200) { // within 2 hours
                 $foundTransition = $trans;
                 break;
             }
         }
 
-        if ($foundTransition) {
-            self::assertNotNull($foundTransition);
-            $type = $tzif->types[$foundTransition->typeIndex];
-
-            // After spring transition, should be DST (CEST = UTC+2)
-            self::assertTrue($type->isDst || $type->gmtOff === 7200);
+        if (!$foundTransition) {
+            return;
         }
+
+        self::assertNotNull($foundTransition);
+        $type = $tzif->types[$foundTransition->typeIndex];
+
+        // After spring transition, should be DST (CEST = UTC+2)
+        self::assertTrue($type->isDst || $type->gmtOff === 7200);
     }
 }

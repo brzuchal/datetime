@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -12,12 +14,13 @@ use Stringable;
  *
  * @psalm-immutable
  */
-final readonly class LocalDateTimeDelta implements Stringable
+final readonly class DateTimeDelta implements Stringable
 {
     public function __construct(
         public Period $period,
         public Duration $duration,
-    ) {}
+    ) {
+    }
 
     public static function of(Period $period, Duration $duration): self
     {
@@ -100,7 +103,13 @@ final readonly class LocalDateTimeDelta implements Stringable
 
     public function __toString(): string
     {
-        if ($this->period->isZero() && $this->duration->hours === 0 && $this->duration->minutes === 0 && $this->duration->seconds === 0 && $this->duration->nanos === 0) {
+        if (
+            $this->period->isZero() &&
+            $this->duration->hours === 0 &&
+            $this->duration->minutes === 0 &&
+            $this->duration->seconds === 0 &&
+            $this->duration->nanos === 0
+        ) {
             return 'PT0S';
         }
 

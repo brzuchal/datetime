@@ -1,10 +1,12 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Format;
 
 /**
  * Represents an exception that is thrown when an invalid input is encountered.
  */
-final class InvalidInput extends \Exception
+final class InvalidFormat extends \Exception
 {
 }

@@ -1,8 +1,12 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Timezone;
 
-use Brzuchal\DateTime\InvalidTimezone;
+use Brzuchal\DateTime\Instant;
+use Brzuchal\DateTime\InvalidZoneRules;
+use Brzuchal\DateTime\Offset;
 
 /**
  * Timezone rules with lazy tzif file parsing and POSIX future transitions.
@@ -31,22 +35,34 @@ final class ZoneRules
     /**
      * Get the offset in seconds for a given UTC timestamp.
      */
-    public function getOffsetForTimestamp(int $utcTimestamp): int
+    public function getOffset(Instant $instant): Offset
     {
+        $utcTimestamp = $instant->getEpochSecond();
+
         if ($utcTimestamp >= $this->cutoffTimestamp && $this->posixRule !== '') {
-            return $this->computePosixOffset($utcTimestamp);
+            return Offset::ofTotalSeconds($this->computePosixOffset($utcTimestamp));
         }
 
         $this->parsedTransitions ??= $this->parseTzifFile($this->tzifPath);
 
-        return $this->findOffsetInParsedTransitions($utcTimestamp);
+        return Offset::ofTotalSeconds($this->findOffsetInParsedTransitions($utcTimestamp));
+    }
+
+    /**
+     * Get the offset in seconds for a given UTC timestamp (compatibility method).
+     */
+    public function getOffsetForTimestamp(int $utcTimestamp): int
+    {
+        $instant = \Brzuchal\DateTime\Instant::ofEpochSecond($utcTimestamp);
+
+        return $this->getOffset($instant)->totalSeconds;
     }
 
     /**
      * Parse tzif file and extract transitions.
      *
      * @return array<int, array{0:int, 1:int, 2:bool, 3:string}>
-     * @throws InvalidTimezone
+     * @throws InvalidZoneRules
      */
     private function parseTzifFile(string $path): array
     {
@@ -125,7 +141,7 @@ final class ZoneRules
             $epochDay--;
         }
 
-        $dateParts = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::dateFromEpochDay($epochDay);
+        $dateParts = \Brzuchal\DateTime\Internal\IsoCalendar::dateFromEpochDay($epochDay);
         $year = $dateParts[0];
 
         $parts = \explode(',', $this->posixRule);
@@ -211,15 +227,17 @@ final class ZoneRules
         $weekSpec = $parts[1];
         $dayOfWeek = (int) $parts[2];
 
-        if ($weekSpec === '5') {
+        $week = (int) $weekSpec;
+
+        if ($week === 5) {
             // Last occurrence of dayOfWeek in month
             $day = $this->lastDayOfWeekInMonth($year, $month, $dayOfWeek);
-
-            return $this->localToUtcTimestamp($year, $month, $day, $hour, $isEnd ? $dstOffsetSec : $baseOffsetSec);
+        } else {
+            // Nth occurrence (1 = first, 2 = second, 3 = third, 4 = fourth)
+            $day = $this->nthDayOfWeekInMonth($year, $month, $week, $dayOfWeek);
         }
 
-        // First occurrence (simplified - just use day 1)
-        return $this->localToUtcTimestamp($year, $month, 1, $hour, $isEnd ? $dstOffsetSec : $baseOffsetSec);
+        return $this->localToUtcTimestamp($year, $month, $day, $hour, $isEnd ? $dstOffsetSec : $baseOffsetSec);
     }
 
     private function localToUtcTimestamp(
@@ -229,7 +247,7 @@ final class ZoneRules
         int $hour,
         int $offsetSec,
     ): int {
-        $epochDay = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::epochDayFromDate($year, $month, $day);
+        $epochDay = \Brzuchal\DateTime\Internal\IsoCalendar::epochDayFromDate($year, $month, $day);
         // Hour only, minute/second 0
         $secondOfDay = $hour * 3600;
 
@@ -238,13 +256,53 @@ final class ZoneRules
         return $localTs - $offsetSec;
     }
 
+    /**
+     * Find the day-of-month for the Nth occurrence of the given POSIX day-of-week
+     * (0 = Sunday … 6 = Saturday) within the given month.
+     *
+     * If $nth exceeds the number of occurrences in the month (e.g., asking for the
+     * 5th Monday when there are only 4), the last occurrence is returned — matching
+     * POSIX semantics.
+     */
+    private function nthDayOfWeekInMonth(int $year, int $month, int $nth, int $wantedDow): int
+    {
+        $daysInMonth = $this->daysInMonth($year, $month);
+        $count = 0;
+
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $epochDay = \Brzuchal\DateTime\Internal\IsoCalendar::epochDayFromDate($year, $month, $day);
+
+            // ISO DOW: 1970-01-01 was Thursday → offset=3 → 0=Monday, 6=Sunday
+            $dayOfWeekIndex = ($epochDay + 3) % 7;
+            if ($dayOfWeekIndex < 0) {
+                $dayOfWeekIndex += 7;
+            }
+
+            // Convert ISO DOW (0=Mon…6=Sun) to POSIX DOW (0=Sun…6=Sat)
+            $posixDow = ($dayOfWeekIndex + 1) % 7;
+
+            if ($posixDow !== $wantedDow) {
+                continue;
+            }
+
+            $count++;
+            if ($count === $nth) {
+                return $day;
+            }
+        }
+
+        // Fallback: return the last found occurrence (handles edge-case where
+        // $nth > actual occurrences — POSIX says treat as last occurrence)
+        return $this->lastDayOfWeekInMonth($year, $month, $wantedDow);
+    }
+
     private function lastDayOfWeekInMonth(int $year, int $month, int $wantedDow): int
     {
         $daysInMonth = $this->daysInMonth($year, $month);
 
         // Start from last day and work backwards
         for ($day = $daysInMonth; $day >= 1; $day--) {
-            $epochDay = \Brzuchal\DateTime\CalendarSystems\IsoCalendar::epochDayFromDate($year, $month, $day);
+            $epochDay = \Brzuchal\DateTime\Internal\IsoCalendar::epochDayFromDate($year, $month, $day);
 
             // 1970-01-01 was a Thursday => offset=3 => 0 => Monday, 6 => Sunday
             $dayOfWeekIndex = ($epochDay + 3) % 7;

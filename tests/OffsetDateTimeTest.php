@@ -1,17 +1,19 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Tests;
 
-use Brzuchal\DateTime\OffsetDateTime;
 use Brzuchal\DateTime\LocalDateTime;
-use Brzuchal\DateTime\ZoneOffset;
+use Brzuchal\DateTime\Offset;
+use Brzuchal\DateTime\OffsetDateTime;
 use PHPUnit\Framework\TestCase;
 
 class OffsetDateTimeTest extends TestCase
 {
     public function testOfCreatesOffsetDateTime(): void
     {
-        $odt = OffsetDateTime::of(2024, 3, 15, 14, 30, 0, 0, ZoneOffset::of(2, 0));
+        $odt = OffsetDateTime::of(2024, 3, 15, 14, 30, 0, 0, Offset::of(2, 0));
 
         self::assertSame(2024, $odt->dateTime->year);
         self::assertSame(3, $odt->dateTime->month);
@@ -31,7 +33,7 @@ class OffsetDateTimeTest extends TestCase
     public function testOfDateTimeAndOffset(): void
     {
         $dt = LocalDateTime::of(2024, 7, 20, 9, 15);
-        $offset = ZoneOffset::of(-5, 0);
+        $offset = Offset::of(-5, 0);
 
         $odt = OffsetDateTime::ofDateTimeAndOffset($dt, $offset);
 
@@ -41,7 +43,7 @@ class OffsetDateTimeTest extends TestCase
 
     public function testNow(): void
     {
-        $odt = OffsetDateTime::now(ZoneOffset::UTC());
+        $odt = OffsetDateTime::now(Offset::UTC());
 
         self::assertInstanceOf(OffsetDateTime::class, $odt);
         self::assertSame(0, $odt->offset->totalSeconds);
@@ -59,7 +61,7 @@ class OffsetDateTimeTest extends TestCase
     public function testToInstant(): void
     {
         // 2024-03-15T14:00:00+02:00 = 2024-03-15T12:00:00Z
-        $odt = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
+        $odt = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
         $instant = $odt->toInstant();
 
         // Verify by converting back to UTC
@@ -72,10 +74,10 @@ class OffsetDateTimeTest extends TestCase
     public function testWithOffsetSameInstant(): void
     {
         // 2024-03-15T14:00:00+02:00
-        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
+        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
 
         // Change to +05:00 keeping same instant
-        $odt2 = $odt1->withOffsetSameInstant(ZoneOffset::of(5, 0));
+        $odt2 = $odt1->withOffsetSameInstant(Offset::of(5, 0));
 
         // Local time should be 17:00 (14:00 + 3 hours difference)
         self::assertSame(17, $odt2->dateTime->hour);
@@ -87,8 +89,8 @@ class OffsetDateTimeTest extends TestCase
 
     public function testWithOffsetSameInstantReturnsSelfIfSameOffset(): void
     {
-        $odt = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
-        $result = $odt->withOffsetSameInstant(ZoneOffset::of(2, 0));
+        $odt = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
+        $result = $odt->withOffsetSameInstant(Offset::of(2, 0));
 
         self::assertSame($odt, $result);
     }
@@ -96,10 +98,10 @@ class OffsetDateTimeTest extends TestCase
     public function testWithOffsetSameLocal(): void
     {
         // 2024-03-15T14:00:00+02:00
-        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
+        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
 
         // Change to +05:00 keeping same local time
-        $odt2 = $odt1->withOffsetSameLocal(ZoneOffset::of(5, 0));
+        $odt2 = $odt1->withOffsetSameLocal(Offset::of(5, 0));
 
         // Local time should stay 14:00
         self::assertSame(14, $odt2->dateTime->hour);
@@ -111,15 +113,15 @@ class OffsetDateTimeTest extends TestCase
 
     public function testWithOffsetSameLocalReturnsSelfIfSameOffset(): void
     {
-        $odt = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
-        $result = $odt->withOffsetSameLocal(ZoneOffset::of(2, 0));
+        $odt = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
+        $result = $odt->withOffsetSameLocal(Offset::of(2, 0));
 
         self::assertSame($odt, $result);
     }
 
     public function testToString(): void
     {
-        $odt = OffsetDateTime::of(2024, 3, 15, 14, 30, 45, 0, ZoneOffset::of(2, 30));
+        $odt = OffsetDateTime::of(2024, 3, 15, 14, 30, 45, 0, Offset::of(2, 30));
 
         self::assertSame('2024-03-15T14:30:45+02:30', (string) $odt);
     }
@@ -127,19 +129,19 @@ class OffsetDateTimeTest extends TestCase
     public function testEquals(): void
     {
         // Same instant, different offsets
-        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
-        $odt2 = OffsetDateTime::of(2024, 3, 15, 12, 0, 0, 0, ZoneOffset::UTC());
+        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
+        $odt2 = OffsetDateTime::of(2024, 3, 15, 12, 0, 0, 0, Offset::UTC());
 
         self::assertTrue($odt1->equals($odt2), 'Same instant should be equal');
 
-        $odt3 = OffsetDateTime::of(2024, 3, 15, 15, 0, 0, 0, ZoneOffset::of(2, 0));
+        $odt3 = OffsetDateTime::of(2024, 3, 15, 15, 0, 0, 0, Offset::of(2, 0));
         self::assertFalse($odt1->equals($odt3), 'Different instants should not be equal');
     }
 
     public function testIsBefore(): void
     {
-        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
-        $odt2 = OffsetDateTime::of(2024, 3, 15, 15, 0, 0, 0, ZoneOffset::of(2, 0));
+        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
+        $odt2 = OffsetDateTime::of(2024, 3, 15, 15, 0, 0, 0, Offset::of(2, 0));
 
         self::assertTrue($odt1->isBefore($odt2));
         self::assertFalse($odt2->isBefore($odt1));
@@ -147,8 +149,8 @@ class OffsetDateTimeTest extends TestCase
 
     public function testIsAfter(): void
     {
-        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, ZoneOffset::of(2, 0));
-        $odt2 = OffsetDateTime::of(2024, 3, 15, 15, 0, 0, 0, ZoneOffset::of(2, 0));
+        $odt1 = OffsetDateTime::of(2024, 3, 15, 14, 0, 0, 0, Offset::of(2, 0));
+        $odt2 = OffsetDateTime::of(2024, 3, 15, 15, 0, 0, 0, Offset::of(2, 0));
 
         self::assertFalse($odt1->isAfter($odt2));
         self::assertTrue($odt2->isAfter($odt1));

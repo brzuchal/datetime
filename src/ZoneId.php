@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -6,7 +8,7 @@ use Brzuchal\DateTime\Timezone\ZoneRules;
 use Brzuchal\DateTime\Timezone\ZoneRulesProvider;
 
 /**
- * IANA timezone identifier (e.g., "Europe/Warsaw", "America/New_York").
+ * A time-zone ID, such as `Europe/Paris` or `+02:00`.
  *
  * Immutable wrapper that lazily loads {@see ZoneRules} from {@see ZoneRulesProvider}.
  */
@@ -20,19 +22,33 @@ final class ZoneId implements \Stringable
 
     private function __construct(
         public readonly string $id,
-    ) {}
+    ) {
+    }
 
     /**
      * Get ZoneId for an IANA timezone identifier.
      *
-     * @throws InvalidTimezone If timezone is not found.
+     * @throws InvalidZoneId If timezone is not found.
      */
     public static function of(string $zoneId): self
     {
+        // It might be an offset-based ZoneId
+        if (Offset::isValidOffsetString($zoneId)) {
+            return self::ofOffset(Offset::parse($zoneId));
+        }
+
         // Validate that zone exists by attempting to load rules
         ZoneRulesProvider::getRules($zoneId);
 
         return new self($zoneId);
+    }
+
+    /**
+     * Obtains an instance of ZoneId wrapping an offset.
+     */
+    public static function ofOffset(Offset $offset): self
+    {
+        return new self($offset->toString());
     }
 
     /**
@@ -59,6 +75,17 @@ final class ZoneId implements \Stringable
     }
 
     /**
+     * Resets the cached system default timezone.
+     *
+     * This is useful if the system timezone is changed via date_default_timezone_set()
+     * during the execution of the script.
+     */
+    public static function resetSystemDefault(): void
+    {
+        self::$systemDefault = null;
+    }
+
+    /**
      * Get the timezone rules for this zone.
      *
      * Lazy-loaded from {@see ZoneRulesProvider}.
@@ -73,17 +100,19 @@ final class ZoneId implements \Stringable
      */
     public function getOffsetForTimestamp(int $utcTimestamp): int
     {
-        return $this->getRules()->getOffsetForTimestamp($utcTimestamp);
+        $instant = Instant::ofEpochSecond($utcTimestamp);
+
+        return $this->getRules()->getOffset($instant)->totalSeconds;
     }
 
     /**
-     * Get ZoneOffset for a given UTC timestamp.
+     * Get UtcOffset for a given UTC timestamp.
      */
-    public function getZoneOffsetForTimestamp(int $utcTimestamp): ZoneOffset
+    public function getZoneOffsetForTimestamp(int $utcTimestamp): Offset
     {
         $offsetSeconds = $this->getOffsetForTimestamp($utcTimestamp);
 
-        return ZoneOffset::ofTotalSeconds($offsetSeconds);
+        return Offset::ofTotalSeconds($offsetSeconds);
     }
 
     public function __toString(): string

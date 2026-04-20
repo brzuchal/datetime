@@ -1,10 +1,12 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Tests;
 
+use Brzuchal\DateTime\InvalidZoneId;
+use Brzuchal\DateTime\Offset;
 use Brzuchal\DateTime\ZoneId;
-use Brzuchal\DateTime\ZoneOffset;
-use Brzuchal\DateTime\InvalidTimezone;
 use PHPUnit\Framework\TestCase;
 
 class ZoneIdTest extends TestCase
@@ -19,8 +21,8 @@ class ZoneIdTest extends TestCase
 
     public function testOfValidatesZoneExists(): void
     {
-        $this->expectException(InvalidTimezone::class);
-        $this->expectExceptionMessage('Unknown timezone');
+        $this->expectException(InvalidZoneId::class);
+        $this->expectExceptionMessage('Unknown time-zone ID');
 
         ZoneId::of('Invalid/Timezone');
     }
@@ -76,7 +78,7 @@ class ZoneIdTest extends TestCase
 
         $offset = $zone->getZoneOffsetForTimestamp($timestamp);
 
-        self::assertInstanceOf(ZoneOffset::class, $offset);
+        self::assertInstanceOf(Offset::class, $offset);
         self::assertSame(-18000, $offset->totalSeconds, 'NYC winter should be UTC-5');
     }
 

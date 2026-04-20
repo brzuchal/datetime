@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Temporal;
 
@@ -8,7 +10,8 @@ namespace Brzuchal\DateTime\Temporal;
 final class TimeUnit
 {
     private function __construct()
-    {}
+    {
+    }
 
     public const int NANOS_PER_SECOND = 1_000_000_000;
     public const int SECONDS_PER_MINUTE = 60;

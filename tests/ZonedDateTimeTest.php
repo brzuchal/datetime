@@ -1,12 +1,14 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Tests;
 
-use Brzuchal\DateTime\ZonedDateTime;
-use Brzuchal\DateTime\LocalDateTime;
-use Brzuchal\DateTime\ZoneId;
-use Brzuchal\DateTime\ZoneOffset;
 use Brzuchal\DateTime\Instant;
+use Brzuchal\DateTime\LocalDateTime;
+use Brzuchal\DateTime\Offset;
+use Brzuchal\DateTime\ZonedDateTime;
+use Brzuchal\DateTime\ZoneId;
 use PHPUnit\Framework\TestCase;
 
 class ZonedDateTimeTest extends TestCase

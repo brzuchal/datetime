@@ -1,8 +1,10 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Timezone;
 
-use Brzuchal\DateTime\InvalidTimezone;
+use Brzuchal\DateTime\InvalidZoneRules;
 
 /**
  * Parser for TZif binary timezone files (RFC 9636).
@@ -17,13 +19,13 @@ final class TzifParser
     /**
      * Reads a TZif file from the disk and parses it.
      *
-     * @throws InvalidTimezone
+     * @throws InvalidZoneRules
      */
     public function parseFile(string $filename): TzifFile
     {
         $data = @\file_get_contents($filename);
         if ($data === false) {
-            throw new InvalidTimezone(\sprintf('Cannot read file: %s', $filename));
+            throw new InvalidZoneRules(\sprintf('Unable to read TZIF file: %s', $filename));
         }
 
         return $this->parseData($data);
@@ -32,13 +34,13 @@ final class TzifParser
     /**
      * Parses the raw binary data from a TZif file (any version).
      *
-     * @throws InvalidTimezone
+     * @throws InvalidZoneRules
      */
     public function parseData(string $data): TzifFile
     {
         // At least 44 bytes for the first header
         if (\strlen($data) < self::HEADER_LEN) {
-            throw new InvalidTimezone('Data too short for TZif header.');
+            throw new InvalidZoneRules('Data too short for TZif header.');
         }
 
         // 1) Parse the first (V1) header
@@ -81,7 +83,7 @@ final class TzifParser
         if ($isV2Plus) {
             // read the second header
             if (\strlen($data) < $offset + self::HEADER_LEN) {
-                throw new InvalidTimezone('Data too short for second TZif header.');
+                throw new InvalidZoneRules(\sprintf('Unsupported TZIF version: %s', $version));
             }
 
             $header2 = $this->parseHeaderV1(\substr($data, $offset, self::HEADER_LEN));
@@ -144,14 +146,14 @@ final class TzifParser
     /**
      * Parses a 44-byte header (for both V1 and V2+).
      *
-     * @return array{version:string,ttisutcnt:int,ttisstdcnt:int,leapcnt:int,timecnt:int,typecnt:int,charcnt:int}
-     * @throws InvalidTimezone
+     * @return array{version:string,ttisutcnt:int,ttisstdcnt:int,leapcnt:int,timecnt:int,typecnt:int,typecnt:int,charcnt:int}
+     * @throws InvalidZoneRules
      */
     private function parseHeaderV1(string $rawHeader): array
     {
         $magic = \substr($rawHeader, 0, 4);
         if ($magic !== self::TZ_MAGIC) {
-            throw new InvalidTimezone(\sprintf('Invalid TZif magic: %s', $magic));
+            throw new InvalidZoneRules(\sprintf('Invalid TZif magic: %s', $magic));
         }
 
         // version byte at [4]

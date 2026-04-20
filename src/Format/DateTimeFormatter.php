@@ -1,8 +1,9 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Format;
 
-use Brzuchal\DateTime\CalendarSystems\IsoCalendar;
 use Brzuchal\DateTime\Format\Pattern\Capture;
 use Brzuchal\DateTime\Format\Pattern\FieldToken;
 use Brzuchal\DateTime\Format\Pattern\LiteralToken;
@@ -11,6 +12,7 @@ use Brzuchal\DateTime\Format\Pattern\PatternCompiler;
 use Brzuchal\DateTime\Format\Pattern\PatternSpecification;
 use Brzuchal\DateTime\Format\Pattern\Token;
 use Brzuchal\DateTime\Format\Pattern\Vocabulary;
+use Brzuchal\DateTime\Internal\IsoCalendar;
 use Brzuchal\DateTime\LocalDate;
 use Brzuchal\DateTime\LocalDateTime;
 use Brzuchal\DateTime\LocalTime;
@@ -54,11 +56,11 @@ final readonly class DateTimeFormatter
         return self::create($pattern);
     }
 
-    /** @throws InvalidInput */
+    /** @throws InvalidFormat */
     public function parse(string $input): TemporalFields
     {
         if (! \preg_match($this->regex, $input, $matches)) {
-            throw new InvalidInput('Unable to parse date/time from "' . $input . '"');
+            throw new InvalidFormat('Unable to parse date/time from "' . $input . '"');
         }
 
         $year = null;
@@ -71,6 +73,7 @@ final readonly class DateTimeFormatter
         $second = null;
         $nano = null;
         $ampm = null;
+        $weekBasedYear = null;
 
         foreach ($this->captures as $capture) {
             $value = $matches[$capture->name] ?? null;
@@ -81,8 +84,11 @@ final readonly class DateTimeFormatter
             switch ($capture->symbol) {
                 case 'Y':
                 case 'X':
-                case 'o':
                     $year = (int) $value;
+
+                    break;
+                case 'o':
+                    $weekBasedYear = (int) $value;
 
                     break;
                 case 'y':
@@ -169,6 +175,7 @@ final readonly class DateTimeFormatter
             minute: $minute,
             second: $second,
             nano: $nano,
+            weekBasedYear: $weekBasedYear,
         );
     }
 
@@ -251,7 +258,7 @@ final readonly class DateTimeFormatter
             'A' => ($hour24 ?? 0) >= 12 ? 'PM' : 'AM',
             'z' => $this->formatDayOfYear($accessor),
             'W' => $this->formatIsoWeek($accessor),
-            'o' => $this->formatIsoWeekYear($accessor),
+            'o' => \sprintf('%04d', $accessor->get(TemporalField::WeekBasedYear) ?? 0),
             'w' => $this->formatWeekdayNumberSundayZero($accessor),
             'N' => $this->formatWeekdayNumberMondayOne($accessor),
             'L' => $year !== null && IsoCalendar::isLeapYear($year) ? '1' : '0',
@@ -323,25 +330,6 @@ final readonly class DateTimeFormatter
         }
 
         return \sprintf('%02d', $date->weekOfYear);
-    }
-
-    private function formatIsoWeekYear(TemporalAccessor $accessor): string
-    {
-        $date = $this->extractLocalDate($accessor);
-        if ($date === null) {
-            return '0000';
-        }
-
-        $week = $date->weekOfYear;
-        if ($week === 1 && $date->month === 12) {
-            return \sprintf('%04d', $date->year + 1);
-        }
-
-        if ($week >= 52 && $date->month === 1) {
-            return \sprintf('%04d', $date->year - 1);
-        }
-
-        return \sprintf('%04d', $date->year);
     }
 
     private function formatWeekdayNumberSundayZero(TemporalAccessor $accessor): string

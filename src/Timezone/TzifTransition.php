@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Timezone;
 
@@ -14,5 +16,6 @@ final readonly class TzifTransition
     public function __construct(
         public string $timestamp,
         public int $typeIndex,
-    ) {}
+    ) {
+    }
 }

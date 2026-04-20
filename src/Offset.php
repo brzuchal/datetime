@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime;
 
@@ -10,7 +12,7 @@ use Stringable;
  * This is a fixed offset from UTC/Greenwich in seconds.
  * A ZoneOffset instance is immutable and thread-safe.
  */
-final class ZoneOffset implements Stringable
+final class Offset implements Stringable
 {
     public const int MIN_SECONDS = -64800;
 
@@ -19,7 +21,6 @@ final class ZoneOffset implements Stringable
     /** @var array<int, self> Cache for common offsets */
     private static array $cache = [];
 
-    /** @var self UTC offset (zero) */
     private static self|null $utc = null;
 
     /**
@@ -142,6 +143,31 @@ final class ZoneOffset implements Stringable
     public static function utc(): self
     {
         return self::$utc ??= self::ofTotalSeconds(0);
+    }
+
+    /**
+     * Checks if the given string is a valid offset format.
+     *
+     * @param string $offsetString The offset string to validate
+     * @return bool True if valid offset format
+     */
+    public static function isValidOffsetString(string $offsetString): bool
+    {
+        if ($offsetString === 'Z') {
+            return true;
+        }
+
+        return (bool) preg_match('/^([+-])(\d{2})(?::?(\d{2}))?(?::?(\d{2}))?$/', $offsetString);
+    }
+
+    /**
+     * Returns the offset as a string.
+     *
+     * @return string The offset as a string (e.g., "+02:00" or "Z")
+     */
+    public function toString(): string
+    {
+        return $this->__toString();
     }
 
     /**

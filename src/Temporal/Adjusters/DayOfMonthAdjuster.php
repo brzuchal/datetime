@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Brzuchal\DateTime\Temporal\Adjusters;
 
@@ -11,7 +13,8 @@ use Brzuchal\DateTime\Temporal\TemporalAdjuster;
 final class DayOfMonthAdjuster implements TemporalAdjuster
 {
     private function __construct(private bool $first)
-    {}
+    {
+    }
 
     public static function first(): self
     {

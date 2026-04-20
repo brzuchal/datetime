@@ -1,9 +1,11 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Tests\Timezone;
 
+use Brzuchal\DateTime\InvalidZoneId;
 use Brzuchal\DateTime\Timezone\ZoneRulesProvider;
-use Brzuchal\DateTime\InvalidTimezone;
 use PHPUnit\Framework\TestCase;
 
 class ZoneRulesProviderTest extends TestCase
@@ -46,8 +48,8 @@ class ZoneRulesProviderTest extends TestCase
 
     public function testThrowsOnUnknownZone(): void
     {
-        $this->expectException(InvalidTimezone::class);
-        $this->expectExceptionMessage('Unknown timezone');
+        $this->expectException(InvalidZoneId::class);
+        $this->expectExceptionMessage('Unknown time-zone ID');
 
         ZoneRulesProvider::getRules('Invalid/Timezone');
     }
